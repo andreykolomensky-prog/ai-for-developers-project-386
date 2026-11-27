@@ -23,6 +23,14 @@ export type Interval = {
   end: number
 }
 
+/**
+ * Пересекаются ли два интервала. Конец в интервал не входит, поэтому встреча,
+ * которая начинается в момент окончания другой, с ней не пересекается.
+ */
+export function overlaps(a: Interval, b: Interval): boolean {
+  return a.start < b.end && b.start < a.end
+}
+
 /** Даты окна записи в часовом поясе владельца: сегодня и следующие дни. */
 export function windowDates(now: number, schedule: Schedule): Temporal.PlainDate[] {
   const today = Temporal.Instant.fromEpochMilliseconds(now)

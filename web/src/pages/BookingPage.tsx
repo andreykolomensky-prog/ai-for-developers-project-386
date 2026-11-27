@@ -133,6 +133,11 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
       return
     }
     setFailure(result.failure)
+    if (result.failure.code === 'slot_taken' || result.failure.code === 'validation_error') {
+      // Слот больше недоступен: возвращаем гостя к выбору времени, данные формы сохраняются.
+      setSelectedStart(null)
+      setStep('slot')
+    }
   }
 
   return (
@@ -143,7 +148,7 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
       </Text>
 
       {failure && (
-        <Alert color="red" mt="lg" role="alert" title="Не удалось создать запись">
+        <Alert color="red" mt="lg" role="alert" title={failureTitle(failure)}>
           {failure.message}
         </Alert>
       )}
@@ -279,6 +284,19 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
       </SimpleGrid>
     </>
   )
+}
+
+function failureTitle(failure: ApiFailure): string {
+  switch (failure.code) {
+    case 'slot_taken':
+      return 'Это время уже занято'
+    case 'validation_error':
+      return 'На это время записаться нельзя'
+    case 'not_found':
+      return 'Тип встречи не найден'
+    default:
+      return 'Не удалось создать запись'
+  }
 }
 
 function Summary({ label, value }: { label: string; value: string }) {
