@@ -1,12 +1,17 @@
-import { Container, Text, Title } from '@mantine/core'
+import { Route, Routes } from 'react-router'
+import { Layout } from './components/Layout.tsx'
+import { BookingStubPage } from './pages/BookingStubPage.tsx'
+import { HomePage } from './pages/HomePage.tsx'
+import { NotFoundPage } from './pages/NotFoundPage.tsx'
 
 export function App() {
   return (
-    <Container size="sm" py="xl">
-      <Title order={1}>Запись на звонок</Title>
-      <Text c="dimmed" mt="sm">
-        Каркас приложения готов. Функциональность появится на следующих шагах.
-      </Text>
-    </Container>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<HomePage />} />
+        <Route path="book" element={<BookingStubPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
   )
 }
