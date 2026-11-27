@@ -7,6 +7,13 @@ import { assertMatchesContract } from './contract.ts'
 export type TestServer = {
   /** Запрос к запущенному серверу. Каждый ответ сверяется с контрактом. */
   api: <T = unknown>(method: string, url: string, body?: unknown) => Promise<ApiResponse<T>>
+  /** Запрос с телом как есть, например с повреждённым JSON. Ответ тоже сверяется с контрактом. */
+  raw: <T = unknown>(
+    method: string,
+    url: string,
+    body: string,
+    contentType?: string,
+  ) => Promise<ApiResponse<T>>
   /** Переводит часы сервера на указанный момент. */
   setNow: (iso: string) => void
   close: () => Promise<void>
@@ -37,6 +44,16 @@ export async function startServer(options: {
         ...(body === undefined
           ? {}
           : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+      })
+      const responseBody: unknown = await response.json()
+      assertMatchesContract(method, url, response.status, responseBody)
+      return { status: response.status, body: responseBody as T }
+    },
+    async raw<T>(method: string, url: string, body: string, contentType = 'application/json') {
+      const response = await fetch(`${baseUrl}${url}`, {
+        method,
+        headers: { 'content-type': contentType },
+        body,
       })
       const responseBody: unknown = await response.json()
       assertMatchesContract(method, url, response.status, responseBody)

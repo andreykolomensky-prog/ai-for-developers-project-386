@@ -64,6 +64,9 @@ export type CreateBookingRequest = {
      * Начало выбранного слота. Должно совпадать с началом свободного слота из окна записи.
      */
     startTime: string;
+    /**
+     * Имя гостя. Не может состоять из одних пробелов.
+     */
     guestName: string;
     guestEmail: string;
     notes?: string;
@@ -78,7 +81,7 @@ export type EventType = {
      */
     id: string;
     /**
-     * Название, которое видит гость.
+     * Название, которое видит гость. Не может состоять из одних пробелов.
      */
     title: string;
     /**
@@ -109,6 +112,28 @@ export type Health = {
 export type NotFoundError = {
     code: 'not_found';
     message: string;
+};
+
+/**
+ * Расписание владельца: когда и на сколько дней вперёд гости могут записываться.
+ */
+export type Schedule = {
+    /**
+     * Часовой пояс владельца (IANA). В нём заданы рабочие часы и даты окна записи.
+     */
+    timeZone: string;
+    /**
+     * Начало рабочего дня, `ЧЧ:ММ`.
+     */
+    workDayStart: string;
+    /**
+     * Конец рабочего дня, `ЧЧ:ММ`. Слот должен закончиться не позже.
+     */
+    workDayEnd: string;
+    /**
+     * Длина окна записи в календарных днях, считая сегодняшний.
+     */
+    windowDays: number;
 };
 
 /**
@@ -320,3 +345,19 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type GetScheduleData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/schedule';
+};
+
+export type GetScheduleResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: Schedule;
+};
+
+export type GetScheduleResponse = GetScheduleResponses[keyof GetScheduleResponses];

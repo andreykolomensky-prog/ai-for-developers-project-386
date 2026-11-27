@@ -72,6 +72,7 @@ describe('типы встреч', () => {
 
   test.each([
     ['пустое название', { title: '' }, 'title'],
+    ['название из одних пробелов', { title: '   ' }, 'title'],
     ['нулевая длительность', { durationMinutes: 0 }, 'durationMinutes'],
     ['длительность больше рабочего дня', { durationMinutes: 481 }, 'durationMinutes'],
     ['дробная длительность', { durationMinutes: 22.5 }, 'durationMinutes'],

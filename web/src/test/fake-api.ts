@@ -3,6 +3,7 @@ import type {
   BookingWindow,
   CreateBookingRequest,
   EventType,
+  Schedule,
 } from '../api/generated/index.ts'
 
 type FakeApi = {
@@ -15,6 +16,16 @@ type FakeApi = {
   takenStarts: string[]
   /** Предстоящие встречи, которые видит владелец. */
   bookings: Booking[]
+  /** Адреса, которые сервер считает некорректными: запись с ними получает 422. */
+  rejectedEmails: string[]
+  schedule: Schedule
+}
+
+const moscowSchedule: Schedule = {
+  timeZone: 'Europe/Moscow',
+  workDayStart: '09:00',
+  workDayEnd: '18:00',
+  windowDays: 14,
 }
 
 /**
@@ -27,6 +38,8 @@ export const fakeApi: FakeApi = {
   bookingRequests: [],
   takenStarts: [],
   bookings: [],
+  rejectedEmails: [],
+  schedule: moscowSchedule,
 }
 
 export function resetFakeApi() {
@@ -35,6 +48,8 @@ export function resetFakeApi() {
   fakeApi.bookingRequests = []
   fakeApi.takenStarts = []
   fakeApi.bookings = []
+  fakeApi.rejectedEmails = []
+  fakeApi.schedule = moscowSchedule
 }
 
 const notFound = () => Response.json({ code: 'not_found', message: 'Не найдено' }, { status: 404 })
@@ -47,6 +62,16 @@ async function createBooking(request: Request): Promise<Response> {
     return notFound()
   }
   fakeApi.bookingRequests.push(body)
+  if (fakeApi.rejectedEmails.includes(body.guestEmail)) {
+    return Response.json(
+      {
+        code: 'validation_error',
+        message: 'Данные запроса не прошли проверку',
+        issues: [{ field: 'guestEmail', message: 'must match format "email"' }],
+      },
+      { status: 422 },
+    )
+  }
   if (fakeApi.takenStarts.includes(body.startTime)) {
     // Как и настоящий сервер, после отказа отдаём слот занятым.
     for (const day of fakeApi.bookingWindows[eventType.id]?.days ?? []) {
@@ -77,6 +102,9 @@ export async function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   const { pathname } = new URL(input instanceof Request ? input.url : String(input))
   if (pathname === '/api/event-types') {
     return Response.json(fakeApi.eventTypes)
+  }
+  if (pathname === '/api/schedule') {
+    return Response.json(fakeApi.schedule)
   }
   if (pathname === '/api/bookings') {
     return input instanceof Request && input.method === 'POST'

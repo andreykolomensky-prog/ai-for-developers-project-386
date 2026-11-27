@@ -43,6 +43,8 @@ export function createHandlers(rules: BookingRules): RouteHandlers {
   return {
     getHealth: async (_request, reply) => reply.code(200).send({ status: 'ok' }),
 
+    getSchedule: async (_request, reply) => reply.code(200).send(rules.schedule),
+
     listEventTypes: async (_request, reply) => reply.code(200).send(store.listEventTypes()),
 
     createEventType: async (request, reply) => {

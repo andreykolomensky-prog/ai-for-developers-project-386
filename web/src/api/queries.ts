@@ -6,6 +6,7 @@ import {
   type EventType,
   getBookingWindow,
   getEventType,
+  getSchedule,
   listBookings,
   listEventTypes,
 } from './generated/index.ts'
@@ -15,6 +16,7 @@ const queryKeys = {
   eventType: (id: string) => ['event-types', id] as const,
   bookingWindow: (id: string) => ['event-types', id, 'booking-window'] as const,
   bookings: ['bookings'] as const,
+  schedule: ['schedule'] as const,
 }
 
 /** Ошибка API в виде, удобном интерфейсу: код из контракта и сообщение для человека. */
@@ -74,6 +76,15 @@ export function useBookingWindow(eventTypeId: string, enabled: boolean) {
   })
 }
 
+/** Расписание владельца: часовой пояс, рабочие часы и длина окна записи. */
+export function useSchedule() {
+  return useQuery({
+    queryKey: queryKeys.schedule,
+    queryFn: async () => (await getSchedule({ throwOnError: true })).data,
+    staleTime: Number.POSITIVE_INFINITY,
+  })
+}
+
 export function useBookings() {
   return useQuery({
     queryKey: queryKeys.bookings,
@@ -90,8 +101,12 @@ export function useCreateBooking() {
         ? { ok: true as const, booking: data }
         : { ok: false as const, failure: toFailure(error) }
     },
-    // После любой попытки занятость слотов могла измениться.
-    onSettled: () => queryClient.invalidateQueries(),
+    // После любой попытки занятость слотов могла измениться. Обновление идёт в фоне:
+    // ответ на запись показывается сразу, не дожидаясь перечитывания окна записи.
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.eventTypes })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookings })
+    },
   })
 }
 
@@ -104,6 +119,8 @@ export function useCreateEventType() {
         ? { ok: true as const, eventType: data }
         : { ok: false as const, failure: toFailure(error) }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.eventTypes }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.eventTypes })
+    },
   })
 }

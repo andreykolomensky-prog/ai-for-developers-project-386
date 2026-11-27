@@ -50,3 +50,24 @@ test('пока никто не записался, владелец видит �
 
   expect(await screen.findByText('Пока никто не записался.')).toBeVisible()
 })
+
+test('время встреч показано в часовом поясе владельца из расписания', async () => {
+  fakeApi.eventTypes = [intro]
+  fakeApi.schedule = { ...fakeApi.schedule, timeZone: 'Asia/Yekaterinburg' }
+  fakeApi.bookings = [
+    {
+      id: 'b1',
+      eventType: intro,
+      startTime: '2026-03-03T20:00:00.000Z',
+      endTime: '2026-03-03T20:30:00.000Z',
+      guestName: 'Анна Гостева',
+      guestEmail: 'anna@example.com',
+      createdAt: '2026-03-02T07:30:00.000Z',
+    },
+  ]
+  renderApp('/admin')
+
+  // 20:00 UTC это уже час ночи следующего дня в Екатеринбурге.
+  const wednesday = within(await screen.findByRole('region', { name: 'среда, 4 марта' }))
+  expect(wednesday.getByText('01:00–01:30')).toBeVisible()
+})

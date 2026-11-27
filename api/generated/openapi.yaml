@@ -7,6 +7,7 @@ info:
     записи, гость выбирает свободный слот в окне записи и создаёт запись.
 tags:
   - name: Служебное
+  - name: Расписание
   - name: Типы встреч
   - name: Записи
 paths:
@@ -174,6 +175,20 @@ paths:
                 $ref: '#/components/schemas/Health'
       tags:
         - Служебное
+  /api/schedule:
+    get:
+      operationId: getSchedule
+      description: 'Расписание владельца: часовой пояс, рабочие часы и длина окна записи.'
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+      tags:
+        - Расписание
 components:
   schemas:
     Booking:
@@ -259,6 +274,8 @@ components:
           type: string
           minLength: 1
           maxLength: 80
+          pattern: \S
+          description: Имя гостя. Не может состоять из одних пробелов.
         guestEmail:
           type: string
           maxLength: 254
@@ -285,7 +302,8 @@ components:
           type: string
           minLength: 1
           maxLength: 80
-          description: Название, которое видит гость.
+          pattern: \S
+          description: Название, которое видит гость. Не может состоять из одних пробелов.
         description:
           type: string
           maxLength: 500
@@ -332,6 +350,28 @@ components:
         message:
           type: string
       description: Запрошенный ресурс не найден.
+    Schedule:
+      type: object
+      required:
+        - timeZone
+        - workDayStart
+        - workDayEnd
+        - windowDays
+      properties:
+        timeZone:
+          type: string
+          description: Часовой пояс владельца (IANA). В нём заданы рабочие часы и даты окна записи.
+        workDayStart:
+          type: string
+          description: Начало рабочего дня, `ЧЧ:ММ`.
+        workDayEnd:
+          type: string
+          description: Конец рабочего дня, `ЧЧ:ММ`. Слот должен закончиться не позже.
+        windowDays:
+          type: integer
+          format: int32
+          description: Длина окна записи в календарных днях, считая сегодняшний.
+      description: 'Расписание владельца: когда и на сколько дней вперёд гости могут записываться.'
     Slot:
       type: object
       required:

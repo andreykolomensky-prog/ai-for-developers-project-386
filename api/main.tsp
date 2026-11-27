@@ -21,9 +21,10 @@ model EventType {
   @pattern("^[a-z0-9]+(-[a-z0-9]+)*$")
   id: string;
 
-  /** Название, которое видит гость. */
+  /** Название, которое видит гость. Не может состоять из одних пробелов. */
   @minLength(1)
   @maxLength(80)
+  @pattern("\\S")
   title: string;
 
   /** Описание для гостя. Может быть пустым. */
@@ -34,6 +35,21 @@ model EventType {
   @minValue(5)
   @maxValue(480)
   durationMinutes: int32;
+}
+
+/** Расписание владельца: когда и на сколько дней вперёд гости могут записываться. */
+model Schedule {
+  /** Часовой пояс владельца (IANA). В нём заданы рабочие часы и даты окна записи. */
+  timeZone: string;
+
+  /** Начало рабочего дня, `ЧЧ:ММ`. */
+  workDayStart: string;
+
+  /** Конец рабочего дня, `ЧЧ:ММ`. Слот должен закончиться не позже. */
+  workDayEnd: string;
+
+  /** Длина окна записи в календарных днях, считая сегодняшний. */
+  windowDays: int32;
 }
 
 /** Слот: интервал, на который гость может записаться. */
@@ -92,8 +108,10 @@ model CreateBookingRequest {
   /** Начало выбранного слота. Должно совпадать с началом свободного слота из окна записи. */
   startTime: utcDateTime;
 
+  /** Имя гостя. Не может состоять из одних пробелов. */
   @minLength(1)
   @maxLength(80)
+  @pattern("\\S")
   guestName: string;
 
   @format("email")
@@ -156,6 +174,15 @@ interface HealthChecks {
   @operationId("getHealth")
   @get
   check(): Health;
+}
+
+@route("/schedule")
+@tag("Расписание")
+interface Schedules {
+  /** Расписание владельца: часовой пояс, рабочие часы и длина окна записи. */
+  @operationId("getSchedule")
+  @get
+  read(): Schedule;
 }
 
 @route("/event-types")

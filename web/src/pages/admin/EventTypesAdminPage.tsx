@@ -12,7 +12,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { hasLength, isInRange, matches, useForm } from '@mantine/form'
+import { isInRange, matches, useForm } from '@mantine/form'
 import { useState } from 'react'
 import type { EventType } from '../../api/generated/index.ts'
 import { useCreateEventType, useEventTypes } from '../../api/queries.ts'
@@ -85,7 +85,7 @@ function CreateEventTypeForm() {
         /^[a-z0-9]+(-[a-z0-9]+)*$/,
         'Только латинские буквы в нижнем регистре, цифры и дефис, например intro-30',
       ),
-      title: hasLength({ min: 1, max: 80 }, 'Укажите название до 80 символов'),
+      title: (value) => (value.trim() === '' ? 'Укажите название' : null),
       durationMinutes: isInRange({ min: 5, max: 480 }, 'От 5 до 480 минут'),
     },
     transformValues: (values) => ({

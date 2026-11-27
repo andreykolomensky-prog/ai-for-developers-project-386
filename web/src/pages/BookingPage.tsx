@@ -61,7 +61,11 @@ export function BookingPage() {
         />
       )}
       {eventType.data && bookingWindow.data && (
-        <BookingFlow eventType={eventType.data} bookingWindow={bookingWindow.data} />
+        <BookingFlow
+          eventType={eventType.data}
+          bookingWindow={bookingWindow.data}
+          fetchedAt={bookingWindow.dataUpdatedAt}
+        />
       )}
     </Container>
   )
@@ -70,6 +74,8 @@ export function BookingPage() {
 type FlowProps = {
   eventType: EventType
   bookingWindow: BookingWindow
+  /** Момент, когда получено окно записи: относительно него слот считается прошедшим. */
+  fetchedAt: number
 }
 
 type GuestDetails = {
@@ -78,7 +84,14 @@ type GuestDetails = {
   notes: string
 }
 
-function BookingFlow({ eventType, bookingWindow }: FlowProps) {
+/** Сообщения для полей формы, которые сервер отклонил по контракту. */
+const fieldMessages: Record<keyof GuestDetails, string> = {
+  guestName: 'Укажите имя',
+  guestEmail: 'Укажите email в формате name@example.com',
+  notes: 'Заметка слишком длинная',
+}
+
+function BookingFlow({ eventType, bookingWindow, fetchedAt }: FlowProps) {
   const { timeZone, days } = bookingWindow
   const firstOpenDay = days.find((day) => day.slots.some((slot) => slot.available)) ?? days[0]
 
@@ -107,8 +120,14 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
     return <Confirmation booking={confirmed} timeZone={timeZone} />
   }
 
-  const selectedDay = days.find((day) => day.date === selectedDate)
-  const selectedSlot = selectedDay?.slots.find((slot) => slot.startTime === selectedStart)
+  // Окно записи перечитывается, поэтому выбор сверяется с ним заново: день мог выйти
+  // из окна, а слот мог стать занятым.
+  const selectedDay = days.find((day) => day.date === selectedDate) ?? firstOpenDay
+  const activeDate = selectedDay?.date ?? ''
+  const selectedSlot = selectedDay?.slots.find(
+    (slot) => slot.startTime === selectedStart && slot.available,
+  )
+  const showDetails = step === 'details' && selectedSlot !== undefined
 
   const selectDay = (date: string) => {
     setSelectedDate(date)
@@ -133,7 +152,13 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
       return
     }
     setFailure(result.failure)
-    if (result.failure.code === 'slot_taken' || result.failure.code === 'validation_error') {
+    const issues = result.failure.issues ?? []
+    for (const issue of issues) {
+      if (issue.field in fieldMessages) {
+        form.setFieldError(issue.field, fieldMessages[issue.field as keyof GuestDetails])
+      }
+    }
+    if (isSlotRejected(result.failure)) {
       // Слот больше недоступен: возвращаем гостя к выбору времени, данные формы сохраняются.
       setSelectedStart(null)
       setStep('slot')
@@ -167,7 +192,7 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
             </Text>
           )}
           <Stack gap="xs" mt="md">
-            <Summary label="Выбранная дата" value={selectedDate ? formatDate(selectedDate) : '—'} />
+            <Summary label="Выбранная дата" value={activeDate ? formatDate(activeDate) : '—'} />
             <Summary
               label="Выбранное время"
               value={
@@ -194,7 +219,7 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
                   key={day.date}
                   type="button"
                   className={classes.day}
-                  aria-pressed={day.date === selectedDate}
+                  aria-pressed={day.date === activeDate}
                   aria-label={`${formatDate(day.date)}, свободно: ${pluralizeSlots(free)}`}
                   data-empty={free === 0 || undefined}
                   onClick={() => selectDay(day.date)}
@@ -208,18 +233,19 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
           </div>
         </Card>
 
-        {step === 'slot' ? (
+        {!showDetails ? (
           <Card withBorder padding="lg" component="section" aria-labelledby="slots-title">
             <Text fw={600} id="slots-title">
               Слоты
             </Text>
             <Text c="dimmed" size="xs" mt={4}>
-              {selectedDate ? formatDate(selectedDate) : 'Выберите день'}
+              {activeDate ? formatDate(activeDate) : 'Выберите день'}
             </Text>
             <SlotList
               slots={selectedDay?.slots ?? []}
               timeZone={timeZone}
-              selectedStart={selectedStart}
+              fetchedAt={fetchedAt}
+              selectedStart={selectedSlot?.startTime ?? null}
               onSelect={(slot) => {
                 setSelectedStart(slot.startTime)
                 setFailure(null)
@@ -286,12 +312,20 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
   )
 }
 
+/** Отказ относится к выбранному времени: оно занято или не является свободным слотом. */
+function isSlotRejected(failure: ApiFailure): boolean {
+  return (
+    failure.code === 'slot_taken' ||
+    (failure.issues ?? []).some((issue) => issue.field === 'startTime')
+  )
+}
+
 function failureTitle(failure: ApiFailure): string {
   switch (failure.code) {
     case 'slot_taken':
       return 'Это время уже занято'
     case 'validation_error':
-      return 'На это время записаться нельзя'
+      return isSlotRejected(failure) ? 'На это время записаться нельзя' : 'Проверьте данные формы'
     case 'not_found':
       return 'Тип встречи не найден'
     default:
@@ -315,11 +349,20 @@ function Summary({ label, value }: { label: string; value: string }) {
 type SlotListProps = {
   slots: Slot[]
   timeZone: string
+  fetchedAt: number
   selectedStart: string | null
   onSelect: (slot: Slot) => void
 }
 
-function SlotList({ slots, timeZone, selectedStart, onSelect }: SlotListProps) {
+/** Подпись слота: свободен, занят записью или уже начался. */
+function slotStatus(slot: Slot, fetchedAt: number): string {
+  if (slot.available) {
+    return 'Свободно'
+  }
+  return Date.parse(slot.startTime) <= fetchedAt ? 'Прошло' : 'Занято'
+}
+
+function SlotList({ slots, timeZone, fetchedAt, selectedStart, onSelect }: SlotListProps) {
   if (slots.length === 0) {
     return (
       <Text size="sm" c="dimmed" mt="md">
@@ -340,7 +383,7 @@ function SlotList({ slots, timeZone, selectedStart, onSelect }: SlotListProps) {
             onClick={() => onSelect(slot)}
           >
             <span>{formatTimeRange(slot.startTime, slot.endTime, timeZone)}</span>
-            <span className={classes.slotStatus}>{slot.available ? 'Свободно' : 'Занято'}</span>
+            <span className={classes.slotStatus}>{slotStatus(slot, fetchedAt)}</span>
           </button>
         </li>
       ))}
