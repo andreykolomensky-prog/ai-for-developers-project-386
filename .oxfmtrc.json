@@ -5,6 +5,7 @@
   "printWidth": 100,
   "ignorePatterns": [
     ".github/workflows/hexlet-check.yml",
+    "CHANGELOG.md",
     "api/generated",
     "web/src/api/generated",
     "server/generated"
