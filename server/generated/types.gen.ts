@@ -157,6 +157,22 @@ export type ValidationIssue = {
     message: string;
 };
 
+export type ListBookingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/bookings';
+};
+
+export type ListBookingsResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: Array<Booking>;
+};
+
+export type ListBookingsResponse = ListBookingsResponses[keyof ListBookingsResponses];
+
 export type CreateBookingData = {
     body: CreateBookingRequest;
     path?: never;

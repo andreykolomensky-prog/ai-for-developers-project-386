@@ -6,6 +6,7 @@ import {
   type EventType,
   getBookingWindow,
   getEventType,
+  listBookings,
   listEventTypes,
 } from './generated/index.ts'
 
@@ -13,6 +14,7 @@ const queryKeys = {
   eventTypes: ['event-types'] as const,
   eventType: (id: string) => ['event-types', id] as const,
   bookingWindow: (id: string) => ['event-types', id, 'booking-window'] as const,
+  bookings: ['bookings'] as const,
 }
 
 /** Ошибка API в виде, удобном интерфейсу: код из контракта и сообщение для человека. */
@@ -69,6 +71,13 @@ export function useBookingWindow(eventTypeId: string, enabled: boolean) {
     queryFn: async () =>
       (await getBookingWindow({ path: { eventTypeId }, throwOnError: true })).data,
     enabled,
+  })
+}
+
+export function useBookings() {
+  return useQuery({
+    queryKey: queryKeys.bookings,
+    queryFn: async () => (await listBookings({ throwOnError: true })).data,
   })
 }
 
