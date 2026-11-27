@@ -86,6 +86,47 @@ test('гость выбирает день и слот, выбор показа�
   expect(summary.getByText('09:00–09:30')).toBeVisible()
 })
 
+test('гость записывается: форма отправляет выбранный слот и данные, затем показано подтверждение', async () => {
+  const user = userEvent.setup()
+  openBookingPage()
+
+  await user.click(await screen.findByRole('button', { name: /09:00–09:30/ }))
+  await user.click(screen.getByRole('button', { name: 'Продолжить' }))
+  await user.type(screen.getByLabelText(/Имя/), '  Анна Гостева ')
+  await user.type(screen.getByLabelText(/Email/), 'anna@example.com')
+  await user.type(screen.getByLabelText(/Заметка/), 'Обсудим запуск')
+  await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+  expect(await screen.findByRole('heading', { level: 1, name: 'Вы записаны' })).toBeVisible()
+  expect(screen.getByText(/вторник, 3 марта, 09:00–09:30/)).toBeVisible()
+  expect(fakeApi.bookingRequests).toEqual([
+    {
+      eventTypeId: 'intro',
+      startTime: '2026-03-03T06:00:00.000Z',
+      guestName: 'Анна Гостева',
+      guestEmail: 'anna@example.com',
+      notes: 'Обсудим запуск',
+    },
+  ])
+})
+
+test('без слота продолжить нельзя, а форма не отправляется без имени и с некорректным email', async () => {
+  const user = userEvent.setup()
+  openBookingPage()
+
+  const next = await screen.findByRole('button', { name: 'Продолжить' })
+  expect(next).toBeDisabled()
+
+  await user.click(screen.getByRole('button', { name: /09:00–09:30/ }))
+  await user.click(next)
+  await user.type(screen.getByLabelText(/Email/), 'не-почта')
+  await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+  expect(screen.getByText('Укажите имя')).toBeVisible()
+  expect(screen.getByText(/Укажите email в формате/)).toBeVisible()
+  expect(fakeApi.bookingRequests).toEqual([])
+})
+
 test('ссылка на несуществующий тип встречи показывает страницу «не найдено»', async () => {
   renderApp('/book/unknown')
 
