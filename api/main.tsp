@@ -36,6 +36,39 @@ model EventType {
   durationMinutes: int32;
 }
 
+/** Одно замечание к данным запроса. */
+model ValidationIssue {
+  /** Поле запроса, к которому относится замечание. */
+  field: string;
+
+  message: string;
+}
+
+/** Данные запроса не прошли проверку. */
+@error
+model ValidationError {
+  @statusCode _: 422;
+  code: "validation_error";
+  message: string;
+  issues: ValidationIssue[];
+}
+
+/** Запрошенный ресурс не найден. */
+@error
+model NotFoundError {
+  @statusCode _: 404;
+  code: "not_found";
+  message: string;
+}
+
+/** Тип встречи с таким идентификатором уже существует. */
+@error
+model EventTypeExistsError {
+  @statusCode _: 409;
+  code: "event_type_exists";
+  message: string;
+}
+
 model Health {
   status: "ok";
 }
@@ -56,4 +89,18 @@ interface EventTypes {
   @operationId("listEventTypes")
   @get
   list(): EventType[];
+
+  /** Владелец создаёт тип встречи. */
+  @operationId("createEventType")
+  @post
+  create(@body body: EventType): {
+    @statusCode _: 201;
+    @body body: EventType;
+  } | ValidationError | EventTypeExistsError;
+
+  /** Один тип встречи. */
+  @operationId("getEventType")
+  @get
+  @route("{eventTypeId}")
+  read(@path eventTypeId: string): EventType | NotFoundError;
 }

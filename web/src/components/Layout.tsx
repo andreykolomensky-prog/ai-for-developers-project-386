@@ -19,6 +19,9 @@ export function Layout() {
               <NavLink to="/book" className={classes.link}>
                 Записаться
               </NavLink>
+              <NavLink to="/admin" className={classes.link}>
+                Админка
+              </NavLink>
             </Group>
           </Group>
         </Container>
