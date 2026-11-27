@@ -34,11 +34,11 @@ test('ссылка «Записаться» в шапке ведёт на стр
   expect(screen.getByRole('heading', { level: 1, name: 'Выберите тип встречи' })).toBeVisible()
 })
 
-test('со страницы записи можно вернуться на главную', async () => {
+test('со страницы записи можно вернуться на главную по логотипу', async () => {
   const user = userEvent.setup()
   renderApp('/book')
 
-  await user.click(within(screen.getByRole('main')).getByRole('link', { name: 'На главную' }))
+  await user.click(screen.getByRole('link', { name: 'На главную' }))
 
   expect(screen.getByRole('heading', { level: 1, name: 'Запись на звонок' })).toBeVisible()
 })

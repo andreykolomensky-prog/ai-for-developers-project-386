@@ -57,7 +57,8 @@
 ## Стек
 
 - TypeScript, Node.js 26
-- Бекенд: [Fastify](https://fastify.dev/)
+- Контракт: [TypeSpec](https://typespec.io/) → OpenAPI 3.1 → клиентский SDK и серверные типы через [openapi-ts](https://heyapi.dev/)
+- Бекенд: [Fastify](https://fastify.dev/), маршруты и проверка запросов строятся из OpenAPI ([fastify-openapi-glue](https://github.com/seriousme/fastify-openapi-glue))
 - Фронтенд: [React](https://react.dev/), [Vite](https://vite.dev/), [Mantine](https://mantine.dev/)
 - Тесты: [Vitest](https://vitest.dev/)
 - Линтер и форматирование: [Oxlint и oxfmt](https://oxc.rs/), проверка типов `tsc`
@@ -79,11 +80,21 @@ mise run install  # ставит зависимости из package-lock.json
 
 ```bash
 mise run dev    # бекенд на http://localhost:3000, фронтенд на http://localhost:5173
-mise run check  # линтер, проверка типов и тесты; эту же команду запускает CI
+mise run check  # все проверки; эту же команду запускает CI
 mise run start  # сборка фронтенда и запуск как в продакшене на PORT (по умолчанию 3000)
 ```
 
-Остальные задачи показывает `mise tasks`. Рабочие правила проекта для ИИ-агентов описаны в [AGENTS.md](AGENTS.md).
+Остальные задачи показывает `mise tasks`. Рабочие правила проекта для ИИ-агентов описаны в [AGENTS.md](AGENTS.md), словарь в [GLOSSARY.md](GLOSSARY.md), принятые решения в [docs/adr](docs/adr).
+
+## Контракт API
+
+Источник правды об API это [api/main.tsp](api/main.tsp). Одна команда пересобирает всю цепочку:
+
+```bash
+mise run generate
+```
+
+Она создаёт OpenAPI-спецификацию [api/generated/openapi.yaml](api/generated/openapi.yaml), клиентский SDK `web/src/api/generated` и типы обработчиков Fastify `server/generated`. Эти каталоги лежат в репозитории и руками не правятся: `mise run check` повторяет генерацию и падает, если результат отличается от закоммиченного.
 
 ---
 

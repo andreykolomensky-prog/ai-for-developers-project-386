@@ -15,14 +15,31 @@ run = "npm ci"
 sources = ["package.json", "package-lock.json"]
 outputs = ["node_modules/.package-lock.json"]
 
+[tasks.generate]
+description = "Сгенерировать OpenAPI из TypeSpec, клиентский SDK и серверные типы"
+depends = ["install"]
+run = ["tsp compile api/main.tsp", "openapi-ts"]
+
+[tasks."generate:check"]
+description = "Проверить, что сгенерированные файлы в репозитории совпадают с контрактом"
+depends = ["generate"]
+run = """
+changes=$(git status --porcelain -- api/generated web/src/api/generated server/generated)
+if [ -n "$changes" ]; then
+  echo "Сгенерированные файлы не совпадают с контрактом. Выполните mise run generate и закоммитьте результат:"
+  echo "$changes"
+  exit 1
+fi
+"""
+
 [tasks."dev:server"]
 description = "Бекенд с перезапуском при изменениях, http://localhost:3000"
-depends = ["install"]
+depends = ["generate"]
 run = "node --watch server/main.ts"
 
 [tasks."dev:web"]
 description = "Фронтенд (Vite) с прокси на бекенд, http://localhost:5173"
-depends = ["install"]
+depends = ["generate"]
 run = "vite"
 
 [tasks.dev]
@@ -31,7 +48,7 @@ depends = ["dev:server", "dev:web"]
 
 [tasks.build]
 description = "Собрать фронтенд в dist/web"
-depends = ["install"]
+depends = ["generate"]
 run = "vite build"
 
 [tasks.start]
@@ -41,7 +58,7 @@ run = "node server/main.ts"
 
 [tasks.lint]
 description = "Линтер и проверка форматирования"
-depends = ["install"]
+depends = ["generate"]
 run = ["oxlint", "oxfmt --check"]
 
 [tasks.format]
@@ -51,14 +68,14 @@ run = ["oxfmt", "oxlint --fix"]
 
 [tasks.typecheck]
 description = "Проверка типов"
-depends = ["install"]
+depends = ["generate"]
 run = "tsc -b"
 
 [tasks.test]
-description = "Тесты"
-depends = ["install"]
+description = "API-тесты и тесты интерфейса на Vitest"
+depends = ["generate"]
 run = "vitest run"
 
 [tasks.check]
-description = "Все проверки: линтер, типы, тесты. Эту же команду запускает CI"
-depends = ["lint", "typecheck", "test"]
+description = "Все проверки: линтер, типы, генерация, тесты. Эту же команду запускает CI"
+depends = ["lint", "typecheck", "test", "generate:check"]

@@ -3,5 +3,10 @@
   "semi": false,
   "singleQuote": true,
   "printWidth": 100,
-  "ignorePatterns": [".github/workflows/hexlet-check.yml"]
+  "ignorePatterns": [
+    ".github/workflows/hexlet-check.yml",
+    "api/generated",
+    "web/src/api/generated",
+    "server/generated"
+  ]
 }
