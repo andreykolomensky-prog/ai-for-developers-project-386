@@ -18,7 +18,8 @@ If any of these files don't exist, **proceed silently**. The `/domain-modeling` 
 ├── GLOSSARY.md
 └── docs/adr/
     ├── 0001-one-process-serves-api-and-frontend.md
-    └── 0002-server-runs-typescript-without-build.md
+    ├── 0002-server-runs-typescript-without-build.md
+    └── ...
 ```
 
 ## Use the glossary's vocabulary
