@@ -18,8 +18,9 @@
 
 - `server/` бекенд на Fastify: `app.ts` собирает приложение, `main.ts` запускает его на `PORT`.
 - `web/` фронтенд на React, Vite и Mantine. Собирается в `dist/web`, в продакшене его раздаёт сервер.
-- `test/` тесты на Vitest.
+- `test/` тесты сервера на Vitest. Тесты интерфейса лежат рядом с компонентами в `web/src/**/*.test.tsx` и работают в jsdom.
 - API находится под префиксом `/api`, остальные пути отдают фронтенд.
+- Словарь проекта в `GLOSSARY.md`, принятые решения в `docs/adr/`.
 
 ## Правила
 
@@ -27,3 +28,19 @@
 - Перед коммитом `mise run check` должен быть зелёным.
 - Коммиты идут по [Conventional Commits](https://www.conventionalcommits.org): `feat: ...`, `fix: ...`, `docs: ...`, `test: ...`, `refactor: ...`, `chore: ...`, `ci: ...`. Формат проверяет хук `commit-msg`.
 - Файл `.github/workflows/hexlet-check.yml` принадлежит Хекслету: его нельзя менять, переименовывать и удалять.
+
+## Agent skills
+
+Проект ведётся набором скиллов [mattpocock/skills](https://github.com/mattpocock/skills): `/grill-with-docs`, `/wayfinder`, `/to-spec`, `/to-tickets`, `/implement`, `/implement-spec`. Установка: `npx skills@latest add mattpocock/skills`.
+
+### Issue tracker
+
+Задачи, карта решений, спецификация и тикеты живут в GitHub Issues этого репозитория, работа идёт через `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Используются пять меток по умолчанию: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: один `GLOSSARY.md` и `docs/adr/` в корне репозитория. See `docs/agents/domain.md`.
