@@ -44,7 +44,7 @@ model Slot {
   /** Конец слота: начало плюс длительность типа встречи. */
   endTime: utcDateTime;
 
-  /** Свободен ли слот. Слот, который уже начался, недоступен. */
+  /** Свободен ли слот: он ещё не начался и на него нет записи. */
   available: boolean;
 }
 
@@ -64,6 +64,44 @@ model BookingWindow {
 
   /** Ровно 14 дней подряд, первый из них сегодняшний. */
   days: BookingWindowDay[];
+}
+
+/** Запись: встреча гостя с владельцем, занявшая слот. */
+model Booking {
+  id: string;
+
+  /** Тип встречи, на который создана запись. */
+  eventType: EventType;
+
+  startTime: utcDateTime;
+  endTime: utcDateTime;
+  guestName: string;
+  guestEmail: string;
+
+  /** Заметка гостя для владельца. */
+  notes?: string;
+
+  createdAt: utcDateTime;
+}
+
+/** Данные, которые гость отправляет при создании записи. */
+model CreateBookingRequest {
+  /** Идентификатор типа встречи. */
+  eventTypeId: string;
+
+  /** Начало выбранного слота. Должно совпадать с началом свободного слота из окна записи. */
+  startTime: utcDateTime;
+
+  @minLength(1)
+  @maxLength(80)
+  guestName: string;
+
+  @format("email")
+  @maxLength(254)
+  guestEmail: string;
+
+  @maxLength(500)
+  notes?: string;
 }
 
 /** Одно замечание к данным запроса. */
@@ -96,6 +134,14 @@ model NotFoundError {
 model EventTypeExistsError {
   @statusCode _: 409;
   code: "event_type_exists";
+  message: string;
+}
+
+/** Выбранное время уже занято другой записью. */
+@error
+model SlotTakenError {
+  @statusCode _: 409;
+  code: "slot_taken";
   message: string;
 }
 
@@ -139,4 +185,16 @@ interface EventTypes {
   @get
   @route("{eventTypeId}/booking-window")
   bookingWindow(@path eventTypeId: string): BookingWindow | NotFoundError;
+}
+
+@route("/bookings")
+@tag("Записи")
+interface Bookings {
+  /** Гость создаёт запись на свободный слот. */
+  @operationId("createBooking")
+  @post
+  create(@body body: CreateBookingRequest): {
+    @statusCode _: 201;
+    @body body: Booking;
+  } | ValidationError | NotFoundError | SlotTakenError;
 }

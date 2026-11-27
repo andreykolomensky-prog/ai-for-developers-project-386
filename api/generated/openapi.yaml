@@ -8,7 +8,46 @@ info:
 tags:
   - name: Служебное
   - name: Типы встреч
+  - name: Записи
 paths:
+  /api/bookings:
+    post:
+      operationId: createBooking
+      description: Гость создаёт запись на свободный слот.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: Запрошенный ресурс не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: Выбранное время уже занято другой записью.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlotTakenError'
+        '422':
+          description: Данные запроса не прошли проверку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      tags:
+        - Записи
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
   /api/event-types:
     get:
       operationId: listEventTypes
@@ -122,6 +161,39 @@ paths:
         - Служебное
 components:
   schemas:
+    Booking:
+      type: object
+      required:
+        - id
+        - eventType
+        - startTime
+        - endTime
+        - guestName
+        - guestEmail
+        - createdAt
+      properties:
+        id:
+          type: string
+        eventType:
+          $ref: '#/components/schemas/EventType'
+          description: Тип встречи, на который создана запись.
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        guestName:
+          type: string
+        guestEmail:
+          type: string
+        notes:
+          type: string
+          description: Заметка гостя для владельца.
+        createdAt:
+          type: string
+          format: date-time
+      description: 'Запись: встреча гостя с владельцем, занявшая слот.'
     BookingWindow:
       type: object
       required:
@@ -153,6 +225,33 @@ components:
             $ref: '#/components/schemas/Slot'
           description: Слоты дня по возрастанию времени начала.
       description: Слоты одного календарного дня.
+    CreateBookingRequest:
+      type: object
+      required:
+        - eventTypeId
+        - startTime
+        - guestName
+        - guestEmail
+      properties:
+        eventTypeId:
+          type: string
+          description: Идентификатор типа встречи.
+        startTime:
+          type: string
+          format: date-time
+          description: Начало выбранного слота. Должно совпадать с началом свободного слота из окна записи.
+        guestName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        guestEmail:
+          type: string
+          maxLength: 254
+          format: email
+        notes:
+          type: string
+          maxLength: 500
+      description: Данные, которые гость отправляет при создании записи.
     EventType:
       type: object
       required:
@@ -235,8 +334,21 @@ components:
           description: 'Конец слота: начало плюс длительность типа встречи.'
         available:
           type: boolean
-          description: Свободен ли слот. Слот, который уже начался, недоступен.
+          description: 'Свободен ли слот: он ещё не начался и на него нет записи.'
       description: 'Слот: интервал, на который гость может записаться.'
+    SlotTakenError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - slot_taken
+        message:
+          type: string
+      description: Выбранное время уже занято другой записью.
     ValidationError:
       type: object
       required:

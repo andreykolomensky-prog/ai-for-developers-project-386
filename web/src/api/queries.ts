@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  type CreateBookingRequest,
+  createBooking,
   createEventType,
   type EventType,
   getBookingWindow,
@@ -67,6 +69,20 @@ export function useBookingWindow(eventTypeId: string, enabled: boolean) {
     queryFn: async () =>
       (await getBookingWindow({ path: { eventTypeId }, throwOnError: true })).data,
     enabled,
+  })
+}
+
+export function useCreateBooking() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: CreateBookingRequest) => {
+      const { data, error } = await createBooking({ body })
+      return data
+        ? { ok: true as const, booking: data }
+        : { ok: false as const, failure: toFailure(error) }
+    },
+    // После любой попытки занятость слотов могла измениться.
+    onSettled: () => queryClient.invalidateQueries(),
   })
 }
 

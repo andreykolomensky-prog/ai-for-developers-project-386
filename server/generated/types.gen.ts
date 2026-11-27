@@ -5,6 +5,26 @@ export type ClientOptions = {
 };
 
 /**
+ * Запись: встреча гостя с владельцем, занявшая слот.
+ */
+export type Booking = {
+    id: string;
+    /**
+     * Тип встречи, на который создана запись.
+     */
+    eventType: EventType;
+    startTime: string;
+    endTime: string;
+    guestName: string;
+    guestEmail: string;
+    /**
+     * Заметка гостя для владельца.
+     */
+    notes?: string;
+    createdAt: string;
+};
+
+/**
  * Окно записи: ближайшие 14 календарных дней, начиная с сегодняшнего.
  */
 export type BookingWindow = {
@@ -30,6 +50,23 @@ export type BookingWindowDay = {
      * Слоты дня по возрастанию времени начала.
      */
     slots: Array<Slot>;
+};
+
+/**
+ * Данные, которые гость отправляет при создании записи.
+ */
+export type CreateBookingRequest = {
+    /**
+     * Идентификатор типа встречи.
+     */
+    eventTypeId: string;
+    /**
+     * Начало выбранного слота. Должно совпадать с началом свободного слота из окна записи.
+     */
+    startTime: string;
+    guestName: string;
+    guestEmail: string;
+    notes?: string;
 };
 
 /**
@@ -87,9 +124,17 @@ export type Slot = {
      */
     endTime: string;
     /**
-     * Свободен ли слот. Слот, который уже начался, недоступен.
+     * Свободен ли слот: он ещё не начался и на него нет записи.
      */
     available: boolean;
+};
+
+/**
+ * Выбранное время уже занято другой записью.
+ */
+export type SlotTakenError = {
+    code: 'slot_taken';
+    message: string;
 };
 
 /**
@@ -111,6 +156,39 @@ export type ValidationIssue = {
     field: string;
     message: string;
 };
+
+export type CreateBookingData = {
+    body: CreateBookingRequest;
+    path?: never;
+    query?: never;
+    url: '/api/bookings';
+};
+
+export type CreateBookingErrors = {
+    /**
+     * Запрошенный ресурс не найден.
+     */
+    404: NotFoundError;
+    /**
+     * Выбранное время уже занято другой записью.
+     */
+    409: SlotTakenError;
+    /**
+     * Данные запроса не прошли проверку.
+     */
+    422: ValidationError;
+};
+
+export type CreateBookingError = CreateBookingErrors[keyof CreateBookingErrors];
+
+export type CreateBookingResponses = {
+    /**
+     * The request has succeeded and a new resource has been created as a result.
+     */
+    201: Booking;
+};
+
+export type CreateBookingResponse = CreateBookingResponses[keyof CreateBookingResponses];
 
 export type ListEventTypesData = {
     body?: never;

@@ -35,6 +35,12 @@ class ResizeObserver {
 
 window.ResizeObserver = ResizeObserver
 
+if (!document.fonts) {
+  Object.defineProperty(document, 'fonts', {
+    value: { addEventListener: () => {}, removeEventListener: () => {} },
+  })
+}
+
 // Компонентные тесты работают без сервера: SDK получает данные из fakeApi.
 // Сценарий бронирования с настоящим сервером проверяют браузерные тесты.
 client.setConfig({ baseUrl: 'http://localhost', fetch: fakeFetch })

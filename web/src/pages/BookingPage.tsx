@@ -1,4 +1,5 @@
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -7,14 +8,24 @@ import {
   SimpleGrid,
   Stack,
   Text,
+  Textarea,
+  TextInput,
   Title,
 } from '@mantine/core'
+import { isEmail, isNotEmpty, useForm } from '@mantine/form'
+import { IconCircleCheck } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
-import type { BookingWindow, EventType, Slot } from '../api/generated/index.ts'
-import { useBookingWindow, useEventType } from '../api/queries.ts'
+import type { Booking, BookingWindow, EventType, Slot } from '../api/generated/index.ts'
+import {
+  type ApiFailure,
+  useBookingWindow,
+  useCreateBooking,
+  useEventType,
+} from '../api/queries.ts'
 import { ErrorState, LoadingState } from '../components/QueryState.tsx'
 import {
+  calendarDateOf,
   formatDate,
   formatDayAndMonth,
   formatDuration,
@@ -26,7 +37,7 @@ import {
 import classes from './BookingPage.module.css'
 import { NotFoundPage } from './NotFoundPage.tsx'
 
-/** Страница записи на выбранный тип встречи: календарь окна записи и слоты дня. */
+/** Страница записи на выбранный тип встречи: день, слот, данные гостя, подтверждение. */
 export function BookingPage() {
   const { eventTypeId = '' } = useParams()
   const eventType = useEventType(eventTypeId)
@@ -61,12 +72,40 @@ type FlowProps = {
   bookingWindow: BookingWindow
 }
 
+type GuestDetails = {
+  guestName: string
+  guestEmail: string
+  notes: string
+}
+
 function BookingFlow({ eventType, bookingWindow }: FlowProps) {
   const { timeZone, days } = bookingWindow
   const firstOpenDay = days.find((day) => day.slots.some((slot) => slot.available)) ?? days[0]
 
   const [selectedDate, setSelectedDate] = useState(firstOpenDay?.date ?? '')
   const [selectedStart, setSelectedStart] = useState<string | null>(null)
+  const [step, setStep] = useState<'slot' | 'details'>('slot')
+  const [failure, setFailure] = useState<ApiFailure | null>(null)
+  const [confirmed, setConfirmed] = useState<Booking | null>(null)
+  const createBooking = useCreateBooking()
+
+  const form = useForm<GuestDetails>({
+    mode: 'uncontrolled',
+    initialValues: { guestName: '', guestEmail: '', notes: '' },
+    validate: {
+      guestName: isNotEmpty('Укажите имя'),
+      guestEmail: isEmail('Укажите email в формате name@example.com'),
+    },
+    transformValues: (values) => ({
+      guestName: values.guestName.trim(),
+      guestEmail: values.guestEmail.trim(),
+      notes: values.notes.trim(),
+    }),
+  })
+
+  if (confirmed) {
+    return <Confirmation booking={confirmed} timeZone={timeZone} />
+  }
 
   const selectedDay = days.find((day) => day.date === selectedDate)
   const selectedSlot = selectedDay?.slots.find((slot) => slot.startTime === selectedStart)
@@ -74,6 +113,26 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
   const selectDay = (date: string) => {
     setSelectedDate(date)
     setSelectedStart(null)
+    setStep('slot')
+  }
+
+  const submit = async (details: GuestDetails) => {
+    if (!selectedSlot) {
+      return
+    }
+    setFailure(null)
+    const result = await createBooking.mutateAsync({
+      eventTypeId: eventType.id,
+      startTime: selectedSlot.startTime,
+      guestName: details.guestName,
+      guestEmail: details.guestEmail,
+      ...(details.notes ? { notes: details.notes } : {}),
+    })
+    if (result.ok) {
+      setConfirmed(result.booking)
+      return
+    }
+    setFailure(result.failure)
   }
 
   return (
@@ -82,6 +141,12 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
       <Text c="dimmed" mt="xs">
         Время указано в часовом поясе владельца: {timeZoneLabel(timeZone)}.
       </Text>
+
+      {failure && (
+        <Alert color="red" mt="lg" role="alert" title="Не удалось создать запись">
+          {failure.message}
+        </Alert>
+      )}
 
       <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg" mt="lg" className={classes.columns}>
         <Card withBorder padding="lg" component="section" aria-label="Выбранная встреча">
@@ -138,25 +203,79 @@ function BookingFlow({ eventType, bookingWindow }: FlowProps) {
           </div>
         </Card>
 
-        <Card withBorder padding="lg" component="section" aria-labelledby="slots-title">
-          <Text fw={600} id="slots-title">
-            Слоты
-          </Text>
-          <Text c="dimmed" size="xs" mt={4}>
-            {selectedDate ? formatDate(selectedDate) : 'Выберите день'}
-          </Text>
-          <SlotList
-            slots={selectedDay?.slots ?? []}
-            timeZone={timeZone}
-            selectedStart={selectedStart}
-            onSelect={(slot) => setSelectedStart(slot.startTime)}
-          />
-          <Group mt="md" grow>
-            <Button component={Link} to="/book" variant="default">
-              Назад
-            </Button>
-          </Group>
-        </Card>
+        {step === 'slot' ? (
+          <Card withBorder padding="lg" component="section" aria-labelledby="slots-title">
+            <Text fw={600} id="slots-title">
+              Слоты
+            </Text>
+            <Text c="dimmed" size="xs" mt={4}>
+              {selectedDate ? formatDate(selectedDate) : 'Выберите день'}
+            </Text>
+            <SlotList
+              slots={selectedDay?.slots ?? []}
+              timeZone={timeZone}
+              selectedStart={selectedStart}
+              onSelect={(slot) => {
+                setSelectedStart(slot.startTime)
+                setFailure(null)
+              }}
+            />
+            <Group mt="md" grow>
+              <Button component={Link} to="/book" variant="default">
+                Назад
+              </Button>
+              <Button disabled={!selectedSlot} onClick={() => setStep('details')}>
+                Продолжить
+              </Button>
+            </Group>
+          </Card>
+        ) : (
+          <Card withBorder padding="lg" component="section" aria-labelledby="details-title">
+            <Text fw={600} id="details-title">
+              Ваши данные
+            </Text>
+            <form onSubmit={form.onSubmit((values) => void submit(values))} noValidate>
+              <Stack gap="sm" mt="sm">
+                <TextInput
+                  label="Имя"
+                  placeholder="Как к вам обращаться"
+                  autoComplete="name"
+                  maxLength={80}
+                  withAsterisk
+                  key={form.key('guestName')}
+                  {...form.getInputProps('guestName')}
+                />
+                <TextInput
+                  label="Email"
+                  type="email"
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  maxLength={254}
+                  withAsterisk
+                  key={form.key('guestEmail')}
+                  {...form.getInputProps('guestEmail')}
+                />
+                <Textarea
+                  label="Заметка"
+                  description="Необязательно: о чём хотите поговорить"
+                  maxLength={500}
+                  autosize
+                  minRows={2}
+                  key={form.key('notes')}
+                  {...form.getInputProps('notes')}
+                />
+              </Stack>
+              <Group mt="md" grow>
+                <Button variant="default" onClick={() => setStep('slot')}>
+                  Назад
+                </Button>
+                <Button type="submit" loading={createBooking.isPending}>
+                  Записаться
+                </Button>
+              </Group>
+            </form>
+          </Card>
+        )}
       </SimpleGrid>
     </>
   )
@@ -208,5 +327,37 @@ function SlotList({ slots, timeZone, selectedStart, onSelect }: SlotListProps) {
         </li>
       ))}
     </ul>
+  )
+}
+
+function Confirmation({ booking, timeZone }: { booking: Booking; timeZone: string }) {
+  return (
+    <Card withBorder padding="xl" maw={560} mx="auto" component="section">
+      <Group gap="sm">
+        <IconCircleCheck size={32} color="var(--mantine-color-green-6)" aria-hidden />
+        <Title order={1} size="h2">
+          Вы записаны
+        </Title>
+      </Group>
+      <Text mt="md">
+        {booking.guestName}, встреча «{booking.eventType.title}» подтверждена.
+      </Text>
+      <Stack gap="xs" mt="md">
+        <Summary
+          label="Когда"
+          value={`${formatDate(calendarDateOf(booking.startTime, timeZone))}, ${formatTimeRange(booking.startTime, booking.endTime, timeZone)} (${timeZoneLabel(timeZone)})`}
+        />
+        <Summary label="Email для связи" value={booking.guestEmail} />
+        {booking.notes && <Summary label="Заметка" value={booking.notes} />}
+      </Stack>
+      <Group mt="xl">
+        <Button component={Link} to="/book">
+          Записаться ещё
+        </Button>
+        <Button component={Link} to="/" variant="default">
+          На главную
+        </Button>
+      </Group>
+    </Card>
   )
 }

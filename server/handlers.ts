@@ -1,10 +1,34 @@
-import { type BookingRules, buildBookingWindow } from './booking.ts'
+import { type BookingRules, buildBookingWindow, createBooking } from './booking.ts'
 import type { RouteHandlers } from './generated/fastify.gen.ts'
-import type { NotFoundError } from './generated/types.gen.ts'
+import type { Booking, NotFoundError, ValidationError } from './generated/types.gen.ts'
+import type { StoredBooking } from './store.ts'
+
+const toIso = (instant: number) => new Date(instant).toISOString()
+
+function toBooking(booking: StoredBooking): Booking {
+  return {
+    id: booking.id,
+    eventType: booking.eventType,
+    startTime: toIso(booking.start),
+    endTime: toIso(booking.end),
+    guestName: booking.guestName,
+    guestEmail: booking.guestEmail,
+    ...(booking.notes ? { notes: booking.notes } : {}),
+    createdAt: toIso(booking.createdAt),
+  }
+}
 
 const eventTypeNotFound: NotFoundError = {
   code: 'not_found',
   message: 'Тип встречи не найден',
+}
+
+function startTimeError(message: string): ValidationError {
+  return {
+    code: 'validation_error',
+    message: 'Данные запроса не прошли проверку',
+    issues: [{ field: 'startTime', message }],
+  }
 }
 
 /** Обработчики операций контракта. Имена совпадают с `operationId` из OpenAPI. */
@@ -47,6 +71,28 @@ export function createHandlers(rules: BookingRules): RouteHandlers {
         return reply.code(404).send(eventTypeNotFound)
       }
       return reply.code(200).send(buildBookingWindow(eventType, rules))
+    },
+
+    createBooking: async (request, reply) => {
+      const result = createBooking(request.body, rules)
+      if (result.ok) {
+        return reply.code(201).send(toBooking(result.booking))
+      }
+      switch (result.reason) {
+        case 'event_type_not_found':
+          return reply.code(404).send(eventTypeNotFound)
+        case 'not_a_slot':
+          return reply
+            .code(422)
+            .send(startTimeError('Время не совпадает ни с одним слотом окна записи'))
+        case 'slot_started':
+          return reply.code(422).send(startTimeError('Этот слот уже начался'))
+        case 'slot_taken':
+          return reply.code(409).send({
+            code: 'slot_taken',
+            message: 'Это время уже занято. Выберите другой слот',
+          })
+      }
     },
   }
 }
