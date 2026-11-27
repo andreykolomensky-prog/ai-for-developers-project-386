@@ -13,6 +13,8 @@ type FakeApi = {
   bookingRequests: CreateBookingRequest[]
   /** Начала слотов, которые успел занять другой гость: запись на них получает 409. */
   takenStarts: string[]
+  /** Предстоящие встречи, которые видит владелец. */
+  bookings: Booking[]
 }
 
 /**
@@ -24,6 +26,7 @@ export const fakeApi: FakeApi = {
   bookingWindows: {},
   bookingRequests: [],
   takenStarts: [],
+  bookings: [],
 }
 
 export function resetFakeApi() {
@@ -31,6 +34,7 @@ export function resetFakeApi() {
   fakeApi.bookingWindows = {}
   fakeApi.bookingRequests = []
   fakeApi.takenStarts = []
+  fakeApi.bookings = []
 }
 
 const notFound = () => Response.json({ code: 'not_found', message: 'Не найдено' }, { status: 404 })
@@ -74,8 +78,10 @@ export async function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   if (pathname === '/api/event-types') {
     return Response.json(fakeApi.eventTypes)
   }
-  if (pathname === '/api/bookings' && input instanceof Request && input.method === 'POST') {
-    return createBooking(input)
+  if (pathname === '/api/bookings') {
+    return input instanceof Request && input.method === 'POST'
+      ? createBooking(input)
+      : Response.json(fakeApi.bookings)
   }
 
   const [, eventTypeId, resource] = /^\/api\/event-types\/([^/]+)(?:\/(.+))?$/.exec(pathname) ?? []

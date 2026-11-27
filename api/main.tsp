@@ -190,6 +190,11 @@ interface EventTypes {
 @route("/bookings")
 @tag("Записи")
 interface Bookings {
+  /** Предстоящие записи всех типов встреч по возрастанию времени начала. */
+  @operationId("listBookings")
+  @get
+  list(): Booking[];
+
   /** Гость создаёт запись на свободный слот. */
   @operationId("createBooking")
   @post

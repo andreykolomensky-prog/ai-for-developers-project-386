@@ -83,3 +83,12 @@ export function createBooking(
   store.addBooking(booking)
   return { ok: true, booking }
 }
+
+/** Предстоящие записи: ещё не закончившиеся, по возрастанию времени начала. */
+export function listUpcomingBookings(rules: BookingRules): StoredBooking[] {
+  const now = rules.now()
+  return rules.store
+    .listBookings()
+    .filter((booking) => booking.end > now)
+    .toSorted((a, b) => a.start - b.start)
+}

@@ -1,4 +1,9 @@
-import { type BookingRules, buildBookingWindow, createBooking } from './booking.ts'
+import {
+  type BookingRules,
+  buildBookingWindow,
+  createBooking,
+  listUpcomingBookings,
+} from './booking.ts'
 import type { RouteHandlers } from './generated/fastify.gen.ts'
 import type { Booking, NotFoundError, ValidationError } from './generated/types.gen.ts'
 import type { StoredBooking } from './store.ts'
@@ -72,6 +77,9 @@ export function createHandlers(rules: BookingRules): RouteHandlers {
       }
       return reply.code(200).send(buildBookingWindow(eventType, rules))
     },
+
+    listBookings: async (_request, reply) =>
+      reply.code(200).send(listUpcomingBookings(rules).map(toBooking)),
 
     createBooking: async (request, reply) => {
       const result = createBooking(request.body, rules)

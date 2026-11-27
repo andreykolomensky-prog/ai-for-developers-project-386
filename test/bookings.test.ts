@@ -109,6 +109,10 @@ describe('конфликт занятого времени', () => {
     expect(response.status).toBe(409)
     expect(response.body.code).toBe('slot_taken')
     expect(response.body.message).toMatch(/занято/i)
+
+    const bookings = await server.api<Booking[]>('GET', '/api/bookings')
+    expect(bookings.body).toHaveLength(1)
+    expect(bookings.body[0]?.guestName).toBe('Анна Гостева')
   })
 
   test('то же время нельзя занять другим типом встречи', async () => {
@@ -171,6 +175,9 @@ describe('конфликт занятого времени', () => {
     const statuses = responses.map((response) => response.status)
     expect(statuses.filter((status) => status === 201)).toHaveLength(1)
     expect(statuses.filter((status) => status === 409)).toHaveLength(19)
+
+    const bookings = await server.api<Booking[]>('GET', '/api/bookings')
+    expect(bookings.body).toHaveLength(1)
   })
 
   test('из одновременных запросов разных типов на пересекающееся время проходит только один', async () => {
@@ -241,5 +248,46 @@ describe('ошибки данных при создании записи', () =>
 
     expect(response.status).toBe(404)
     expect(response.body.code).toBe('not_found')
+  })
+
+  test('отклонённый запрос не создаёт запись', async () => {
+    await book('meeting-30', msk('2026-03-03', '10:10'))
+
+    const bookings = await server.api<Booking[]>('GET', '/api/bookings')
+    expect(bookings.body).toEqual([])
+  })
+})
+
+describe('предстоящие встречи владельца', () => {
+  test('в одном списке записи всех типов встреч по возрастанию времени начала', async () => {
+    await book('meeting-60', msk('2026-03-05', '14:00'), { guestName: 'Третий' })
+    await book('meeting-15', msk('2026-03-03', '09:00'), { guestName: 'Первый' })
+    await book('meeting-30', msk('2026-03-03', '12:00'), { guestName: 'Второй' })
+
+    const response = await server.api<Booking[]>('GET', '/api/bookings')
+
+    expect(response.status).toBe(200)
+    expect(response.body.map((booking) => [booking.guestName, booking.eventType.id])).toEqual([
+      ['Первый', 'meeting-15'],
+      ['Второй', 'meeting-30'],
+      ['Третий', 'meeting-60'],
+    ])
+  })
+
+  test('пока записей нет, список пуст', async () => {
+    const response = await server.api<Booking[]>('GET', '/api/bookings')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual([])
+  })
+
+  test('закончившаяся встреча из списка пропадает, идущая остаётся', async () => {
+    await book('meeting-30', msk('2026-03-03', '10:00'))
+
+    server.setNow(msk('2026-03-03', '10:15'))
+    expect((await server.api<Booking[]>('GET', '/api/bookings')).body).toHaveLength(1)
+
+    server.setNow(msk('2026-03-03', '10:30'))
+    expect((await server.api<Booking[]>('GET', '/api/bookings')).body).toHaveLength(0)
   })
 })
