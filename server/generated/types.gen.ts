@@ -26,8 +26,44 @@ export type EventType = {
     durationMinutes: number;
 };
 
+/**
+ * Тип встречи с таким идентификатором уже существует.
+ */
+export type EventTypeExistsError = {
+    code: 'event_type_exists';
+    message: string;
+};
+
 export type Health = {
     status: 'ok';
+};
+
+/**
+ * Запрошенный ресурс не найден.
+ */
+export type NotFoundError = {
+    code: 'not_found';
+    message: string;
+};
+
+/**
+ * Данные запроса не прошли проверку.
+ */
+export type ValidationError = {
+    code: 'validation_error';
+    message: string;
+    issues: Array<ValidationIssue>;
+};
+
+/**
+ * Одно замечание к данным запроса.
+ */
+export type ValidationIssue = {
+    /**
+     * Поле запроса, к которому относится замечание.
+     */
+    field: string;
+    message: string;
 };
 
 export type ListEventTypesData = {
@@ -45,6 +81,62 @@ export type ListEventTypesResponses = {
 };
 
 export type ListEventTypesResponse = ListEventTypesResponses[keyof ListEventTypesResponses];
+
+export type CreateEventTypeData = {
+    body: EventType;
+    path?: never;
+    query?: never;
+    url: '/api/event-types';
+};
+
+export type CreateEventTypeErrors = {
+    /**
+     * Тип встречи с таким идентификатором уже существует.
+     */
+    409: EventTypeExistsError;
+    /**
+     * Данные запроса не прошли проверку.
+     */
+    422: ValidationError;
+};
+
+export type CreateEventTypeError = CreateEventTypeErrors[keyof CreateEventTypeErrors];
+
+export type CreateEventTypeResponses = {
+    /**
+     * The request has succeeded and a new resource has been created as a result.
+     */
+    201: EventType;
+};
+
+export type CreateEventTypeResponse = CreateEventTypeResponses[keyof CreateEventTypeResponses];
+
+export type GetEventTypeData = {
+    body?: never;
+    path: {
+        eventTypeId: string;
+    };
+    query?: never;
+    url: '/api/event-types/{eventTypeId}';
+};
+
+export type GetEventTypeErrors = {
+    /**
+     * Запрошенный ресурс не найден.
+     */
+    404: NotFoundError;
+};
+
+export type GetEventTypeError = GetEventTypeErrors[keyof GetEventTypeErrors];
+
+export type GetEventTypeResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: EventType;
+};
+
+export type GetEventTypeResponse = GetEventTypeResponses[keyof GetEventTypeResponses];
 
 export type GetHealthData = {
     body?: never;

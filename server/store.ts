@@ -13,4 +13,17 @@ export class Store {
   listEventTypes(): EventType[] {
     return [...this.#eventTypes.values()]
   }
+
+  getEventType(id: string): EventType | undefined {
+    return this.#eventTypes.get(id)
+  }
+
+  /** Добавляет тип встречи. Возвращает `false`, если идентификатор уже занят. */
+  addEventType(eventType: EventType): boolean {
+    if (this.#eventTypes.has(eventType.id)) {
+      return false
+    }
+    this.#eventTypes.set(eventType.id, eventType)
+    return true
+  }
 }

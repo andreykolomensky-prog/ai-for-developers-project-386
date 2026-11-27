@@ -20,8 +20,12 @@ test('страница записи показывает типы встреч �
   expect(within(cards[1]!).getByText('45 мин')).toBeVisible()
 })
 
-test('страница записи без типов встреч говорит об этом гостю', async () => {
+test('страница записи без типов встреч подсказывает, где их создать', async () => {
   renderApp('/book')
 
   expect(await screen.findByText(/пока не создал ни одного типа встречи/i)).toBeVisible()
+  expect(screen.getByRole('link', { name: 'админке' })).toHaveAttribute(
+    'href',
+    '/admin/event-types',
+  )
 })

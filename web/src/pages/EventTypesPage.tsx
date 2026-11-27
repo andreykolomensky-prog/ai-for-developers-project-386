@@ -1,4 +1,5 @@
-import { Badge, Card, Container, Group, SimpleGrid, Text, Title } from '@mantine/core'
+import { Anchor, Badge, Card, Container, Group, SimpleGrid, Text, Title } from '@mantine/core'
+import { Link } from 'react-router'
 import { useEventTypes } from '../api/queries.ts'
 import { ErrorState, LoadingState } from '../components/QueryState.tsx'
 import { formatDuration } from '../lib/time.ts'
@@ -19,7 +20,13 @@ export function EventTypesPage() {
         {eventTypes.isPending && <LoadingState label="Загружаем типы встреч" />}
         {eventTypes.isError && <ErrorState onRetry={() => void eventTypes.refetch()} />}
         {eventTypes.data?.length === 0 && (
-          <Text>Владелец пока не создал ни одного типа встречи.</Text>
+          <Text>
+            Владелец пока не создал ни одного типа встречи. Их можно добавить в{' '}
+            <Anchor component={Link} to="/admin/event-types">
+              админке
+            </Anchor>
+            .
+          </Text>
         )}
         {eventTypes.data && eventTypes.data.length > 0 && (
           <SimpleGrid

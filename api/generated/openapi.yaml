@@ -25,6 +25,62 @@ paths:
                   $ref: '#/components/schemas/EventType'
       tags:
         - Типы встреч
+    post:
+      operationId: createEventType
+      description: Владелец создаёт тип встречи.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '409':
+          description: Тип встречи с таким идентификатором уже существует.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTypeExistsError'
+        '422':
+          description: Данные запроса не прошли проверку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      tags:
+        - Типы встреч
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventType'
+  /api/event-types/{eventTypeId}:
+    get:
+      operationId: getEventType
+      description: Один тип встречи.
+      parameters:
+        - name: eventTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '404':
+          description: Запрошенный ресурс не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Типы встреч
   /api/health:
     get:
       operationId: getHealth
@@ -71,6 +127,19 @@ components:
           maximum: 480
           description: Длительность встречи в минутах. Слот этого типа длится столько же.
       description: 'Тип встречи: шаблон, который заводит владелец.'
+    EventTypeExistsError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - event_type_exists
+        message:
+          type: string
+      description: Тип встречи с таким идентификатором уже существует.
     Health:
       type: object
       required:
@@ -80,3 +149,46 @@ components:
           type: string
           enum:
             - ok
+    NotFoundError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - not_found
+        message:
+          type: string
+      description: Запрошенный ресурс не найден.
+    ValidationError:
+      type: object
+      required:
+        - code
+        - message
+        - issues
+      properties:
+        code:
+          type: string
+          enum:
+            - validation_error
+        message:
+          type: string
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationIssue'
+      description: Данные запроса не прошли проверку.
+    ValidationIssue:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Поле запроса, к которому относится замечание.
+        message:
+          type: string
+      description: Одно замечание к данным запроса.
