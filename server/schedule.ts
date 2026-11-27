@@ -1,14 +1,6 @@
-/** Расписание владельца: когда и на сколько дней вперёд гости могут записываться. */
-export type Schedule = {
-  /** Часовой пояс владельца (IANA). В нём заданы рабочие часы и даты окна записи. */
-  timeZone: string
-  /** Начало рабочего дня, `ЧЧ:ММ`. */
-  workDayStart: string
-  /** Конец рабочего дня, `ЧЧ:ММ`. Слот должен закончиться не позже. */
-  workDayEnd: string
-  /** Длина окна записи в календарных днях, считая сегодняшний. */
-  windowDays: number
-}
+import type { Schedule } from './generated/types.gen.ts'
+
+export type { Schedule }
 
 export const defaultSchedule: Schedule = {
   timeZone: 'Europe/Moscow',

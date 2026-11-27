@@ -9,7 +9,7 @@ export function Layout() {
       <AppShell.Header>
         <Container size="lg" h="100%">
           <Group h="100%" justify="space-between">
-            <Anchor component={Link} to="/" underline="never" c="inherit" aria-label="На главную">
+            <Anchor component={Link} to="/" underline="never" c="inherit">
               <Group gap="xs">
                 <IconCalendarEvent size={22} color="var(--mantine-color-orange-6)" aria-hidden />
                 <Text fw={700}>Запись на звонок</Text>

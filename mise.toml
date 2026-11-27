@@ -23,11 +23,16 @@ run = ["tsp compile api/main.tsp", "openapi-ts"]
 [tasks."generate:check"]
 description = "Проверить, что сгенерированные файлы в репозитории совпадают с контрактом"
 depends = ["generate"]
+# Свежий результат генерации сравнивается с индексом git: проходит и закоммиченное,
+# и подготовленное к коммиту состояние. Новые неотслеживаемые файлы тоже считаются расхождением.
 run = """
-changes=$(git status --porcelain -- api/generated web/src/api/generated server/generated)
-if [ -n "$changes" ]; then
-  echo "Сгенерированные файлы не совпадают с контрактом. Выполните mise run generate и закоммитьте результат:"
-  echo "$changes"
+dirs="api/generated web/src/api/generated server/generated"
+changed=$(git diff --name-only -- $dirs)
+untracked=$(git ls-files --others --exclude-standard -- $dirs)
+if [ -n "$changed$untracked" ]; then
+  echo "Сгенерированные файлы не совпадают с контрактом. Выполните mise run generate и добавьте результат в коммит:"
+  echo "$changed"
+  echo "$untracked"
   exit 1
 fi
 """

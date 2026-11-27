@@ -12,7 +12,8 @@ export default defineConfig({
   server: {
     // В разработке фронтенд работает на своём порту и ходит в API бекенда через прокси.
     proxy: {
-      '/api': 'http://localhost:3000',
+      // Только сам API: адрес интерфейса вроде /api-docs остаётся фронтенду.
+      '^/api(/|$)': 'http://localhost:3000',
     },
   },
 })

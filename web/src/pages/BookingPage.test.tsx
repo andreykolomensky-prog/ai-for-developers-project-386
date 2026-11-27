@@ -1,6 +1,6 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import type { BookingWindow } from '../api/generated/index.ts'
 import { fakeApi } from '../test/fake-api.ts'
 import { renderApp } from '../test/render.tsx'
@@ -35,6 +35,15 @@ function bookingWindow(): BookingWindow {
   })
   return { timeZone: 'Europe/Moscow', days }
 }
+
+// Понедельник, 2 марта 2026 года, 10:30 по Москве: от этого момента слот считается прошедшим.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-03-02T07:30:00.000Z') })
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 function openBookingPage() {
   fakeApi.eventTypes = [intro]
@@ -130,7 +139,8 @@ test('если время заняли, гость видит сообщение
   expect(alert).toHaveTextContent('Это время уже занято')
   expect(screen.queryByRole('heading', { name: 'Вы записаны' })).not.toBeInTheDocument()
   // Гость снова на выборе слота, занятое время больше недоступно.
-  expect(await screen.findByRole('button', { name: /09:00–09:30/ })).toBeDisabled()
+  await waitFor(() => expect(screen.getByRole('button', { name: /09:00–09:30/ })).toBeDisabled())
+  expect(screen.getByRole('button', { name: /09:00–09:30/ })).toHaveTextContent('Занято')
 
   await user.click(screen.getByRole('button', { name: /10:00–10:30/ }))
   await user.click(screen.getByRole('button', { name: 'Продолжить' }))
@@ -139,6 +149,39 @@ test('если время заняли, гость видит сообщение
   await user.click(screen.getByRole('button', { name: 'Записаться' }))
 
   expect(await screen.findByRole('heading', { level: 1, name: 'Вы записаны' })).toBeVisible()
+})
+
+test('если сервер отклонил email, гость остаётся в форме и видит ошибку у поля', async () => {
+  const user = userEvent.setup()
+  openBookingPage()
+  fakeApi.rejectedEmails = ['anna.@example.com']
+
+  await user.click(await screen.findByRole('button', { name: /09:00–09:30/ }))
+  await user.click(screen.getByRole('button', { name: 'Продолжить' }))
+  await user.type(screen.getByLabelText(/Имя/), 'Анна Гостева')
+  await user.type(screen.getByLabelText(/Email/), 'anna.@example.com')
+  await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Проверьте данные формы')
+  expect(screen.getByText(/Укажите email в формате/)).toBeVisible()
+  // Слот остаётся выбранным, форма не закрывается.
+  expect(screen.getByLabelText(/Email/)).toHaveValue('anna.@example.com')
+  const summary = within(screen.getByRole('region', { name: 'Выбранная встреча' }))
+  expect(summary.getByText('09:00–09:30')).toBeVisible()
+})
+
+test('слоты, которые сегодня уже начались, помечены «Прошло», а не «Занято»', async () => {
+  const user = userEvent.setup()
+  openBookingPage()
+
+  const days = within(await screen.findByRole('group', { name: 'Календарь' })).getAllByRole(
+    'button',
+  )
+  await user.click(days[0]!)
+
+  const morning = screen.getByRole('button', { name: /09:00–09:30/ })
+  expect(morning).toHaveTextContent('Прошло')
+  expect(morning).toBeDisabled()
 })
 
 test('без слота продолжить нельзя, а форма не отправляется без имени и с некорректным email', async () => {

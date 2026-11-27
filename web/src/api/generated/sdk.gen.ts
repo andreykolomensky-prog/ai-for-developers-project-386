@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateEventTypeData, CreateEventTypeErrors, CreateEventTypeResponses, GetBookingWindowData, GetBookingWindowErrors, GetBookingWindowResponses, GetEventTypeData, GetEventTypeErrors, GetEventTypeResponses, GetHealthData, GetHealthResponses, ListBookingsData, ListBookingsResponses, ListEventTypesData, ListEventTypesResponses } from './types.gen';
+import type { CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateEventTypeData, CreateEventTypeErrors, CreateEventTypeResponses, GetBookingWindowData, GetBookingWindowErrors, GetBookingWindowResponses, GetEventTypeData, GetEventTypeErrors, GetEventTypeResponses, GetHealthData, GetHealthResponses, GetScheduleData, GetScheduleResponses, ListBookingsData, ListBookingsResponses, ListEventTypesData, ListEventTypesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -66,3 +66,8 @@ export const getBookingWindow = <ThrowOnError extends boolean = false>(options: 
  * Проверка, что приложение запущено.
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({ url: '/api/health', ...options });
+
+/**
+ * Расписание владельца: часовой пояс, рабочие часы и длина окна записи.
+ */
+export const getSchedule = <ThrowOnError extends boolean = false>(options?: Options<GetScheduleData, ThrowOnError>): RequestResult<GetScheduleResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetScheduleResponses, unknown, ThrowOnError>({ url: '/api/schedule', ...options });

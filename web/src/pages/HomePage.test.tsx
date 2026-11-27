@@ -38,7 +38,7 @@ test('со страницы записи можно вернуться на гл
   const user = userEvent.setup()
   renderApp('/book')
 
-  await user.click(screen.getByRole('link', { name: 'На главную' }))
+  await user.click(screen.getByRole('link', { name: 'Запись на звонок' }))
 
   expect(screen.getByRole('heading', { level: 1, name: 'Запись на звонок' })).toBeVisible()
 })

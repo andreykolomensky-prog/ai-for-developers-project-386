@@ -222,6 +222,7 @@ describe('ошибки данных при создании записи', () =>
 
   test.each([
     ['пустое имя', { guestName: '' }, 'guestName'],
+    ['имя из одних пробелов', { guestName: '   ' }, 'guestName'],
     ['некорректный email', { guestEmail: 'не-почта' }, 'guestEmail'],
     ['время не в формате даты', { startTime: 'завтра в десять' }, 'startTime'],
     ['слишком длинная заметка', { notes: 'я'.repeat(501) }, 'notes'],
@@ -237,6 +238,18 @@ describe('ошибки данных при создании записи', () =>
     expect(response.body.issues.map((issue) => issue.field)).toContain(field)
     // Отклонённый запрос слот не занимает.
     expect(await slotAvailability('meeting-30', msk('2026-03-03', '10:00'))).toBe(true)
+  })
+
+  test.each([
+    ['повреждённый JSON', '{"eventTypeId":', 'application/json'],
+    ['пустое тело', '', 'application/json'],
+    ['тело не в формате JSON', 'eventTypeId=meeting-30', 'text/plain'],
+  ])('%s отклоняется с кодом 422 в формате контракта', async (_name, body, contentType) => {
+    const response = await server.raw<ValidationError>('POST', '/api/bookings', body, contentType)
+
+    expect(response.status).toBe(422)
+    expect(response.body.code).toBe('validation_error')
+    expect(response.body.issues).toEqual([{ field: 'body', message: expect.any(String) as string }])
   })
 
   test('неизвестный тип встречи отвечает 404', async () => {

@@ -38,9 +38,38 @@ test('адреса интерфейса получают index.html, маршр�
   expect(response.headers['content-type']).toContain('text/html')
 })
 
-test('неизвестный адрес API отвечает 404, а не страницей интерфейса', async () => {
-  const response = await app.inject({ method: 'GET', url: '/api/unknown' })
+test('страницу интерфейса можно запросить методом HEAD', async () => {
+  const response = await app.inject({ method: 'HEAD', url: '/book' })
+
+  expect(response.statusCode).toBe(200)
+  expect(response.headers['content-type']).toContain('text/html')
+})
+
+test('пропавший файл отвечает 404, а не страницей интерфейса', async () => {
+  const response = await app.inject({ method: 'GET', url: '/assets/index-old.js' })
 
   expect(response.statusCode).toBe(404)
   expect(response.headers['content-type']).toContain('application/json')
+})
+
+test.each(['/api/unknown', '/api', '/api?debug=1'])(
+  'неизвестный адрес API %s отвечает 404 в формате ошибки, а не страницей интерфейса',
+  async (url) => {
+    const response = await app.inject({ method: 'GET', url })
+
+    expect(response.statusCode).toBe(404)
+    expect(response.json()).toEqual({ code: 'not_found', message: 'Не найдено' })
+  },
+)
+
+test('без собранного фронтенда сервер отдаёт только API и отвечает 404 на страницы', async () => {
+  const apiOnly = buildApp({ staticDir: path.join(staticDir, 'missing') })
+
+  const page = await apiOnly.inject({ method: 'GET', url: '/' })
+  const health = await apiOnly.inject({ method: 'GET', url: '/api/health' })
+  await apiOnly.close()
+
+  expect(page.statusCode).toBe(404)
+  expect(page.json()).toEqual({ code: 'not_found', message: 'Не найдено' })
+  expect(health.statusCode).toBe(200)
 })
