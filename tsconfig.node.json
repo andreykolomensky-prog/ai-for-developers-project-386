@@ -20,5 +20,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["server", "test", "vite.config.ts", "vitest.config.ts"]
+  "include": ["server", "test", "vite.config.ts", "vitest.config.ts", "openapi-ts.config.ts"]
 }
