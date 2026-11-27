@@ -2,7 +2,7 @@
 
 import type { RouteHandler } from 'fastify';
 
-import type { CreateEventTypeData, CreateEventTypeErrors, CreateEventTypeResponses, GetEventTypeData, GetEventTypeErrors, GetEventTypeResponses, GetHealthResponses, ListEventTypesResponses } from './types.gen.ts';
+import type { CreateEventTypeData, CreateEventTypeErrors, CreateEventTypeResponses, GetBookingWindowData, GetBookingWindowErrors, GetBookingWindowResponses, GetEventTypeData, GetEventTypeErrors, GetEventTypeResponses, GetHealthResponses, ListEventTypesResponses } from './types.gen.ts';
 
 export type RouteHandlers = {
     listEventTypes: RouteHandler<{
@@ -15,6 +15,10 @@ export type RouteHandlers = {
     getEventType: RouteHandler<{
         Params: GetEventTypeData['path'];
         Reply: GetEventTypeErrors & GetEventTypeResponses;
+    }>;
+    getBookingWindow: RouteHandler<{
+        Params: GetBookingWindowData['path'];
+        Reply: GetBookingWindowErrors & GetBookingWindowResponses;
     }>;
     getHealth: RouteHandler<{
         Reply: GetHealthResponses;

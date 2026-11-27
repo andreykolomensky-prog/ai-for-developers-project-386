@@ -36,6 +36,36 @@ model EventType {
   durationMinutes: int32;
 }
 
+/** Слот: интервал, на который гость может записаться. */
+model Slot {
+  /** Начало слота. */
+  startTime: utcDateTime;
+
+  /** Конец слота: начало плюс длительность типа встречи. */
+  endTime: utcDateTime;
+
+  /** Свободен ли слот. Слот, который уже начался, недоступен. */
+  available: boolean;
+}
+
+/** Слоты одного календарного дня. */
+model BookingWindowDay {
+  /** Дата в часовом поясе владельца. */
+  date: plainDate;
+
+  /** Слоты дня по возрастанию времени начала. */
+  slots: Slot[];
+}
+
+/** Окно записи: ближайшие 14 календарных дней, начиная с сегодняшнего. */
+model BookingWindow {
+  /** Часовой пояс владельца (IANA), в котором заданы даты и рабочие часы. */
+  timeZone: string;
+
+  /** Ровно 14 дней подряд, первый из них сегодняшний. */
+  days: BookingWindowDay[];
+}
+
 /** Одно замечание к данным запроса. */
 model ValidationIssue {
   /** Поле запроса, к которому относится замечание. */
@@ -103,4 +133,10 @@ interface EventTypes {
   @get
   @route("{eventTypeId}")
   read(@path eventTypeId: string): EventType | NotFoundError;
+
+  /** Окно записи для типа встречи: слоты на ближайшие 14 дней с отметкой занятости. */
+  @operationId("getBookingWindow")
+  @get
+  @route("{eventTypeId}/booking-window")
+  bookingWindow(@path eventTypeId: string): BookingWindow | NotFoundError;
 }

@@ -1,8 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createEventType, type EventType, listEventTypes } from './generated/index.ts'
+import {
+  createEventType,
+  type EventType,
+  getBookingWindow,
+  getEventType,
+  listEventTypes,
+} from './generated/index.ts'
 
 const queryKeys = {
   eventTypes: ['event-types'] as const,
+  eventType: (id: string) => ['event-types', id] as const,
+  bookingWindow: (id: string) => ['event-types', id, 'booking-window'] as const,
 }
 
 /** Ошибка API в виде, удобном интерфейсу: код из контракта и сообщение для человека. */
@@ -33,6 +41,32 @@ export function useEventTypes() {
   return useQuery({
     queryKey: queryKeys.eventTypes,
     queryFn: async () => (await listEventTypes({ throwOnError: true })).data,
+  })
+}
+
+/** Тип встречи по идентификатору. `null`, если такого типа нет. */
+export function useEventType(eventTypeId: string) {
+  return useQuery({
+    queryKey: queryKeys.eventType(eventTypeId),
+    queryFn: async () => {
+      const { data, error, response } = await getEventType({ path: { eventTypeId } })
+      if (data) {
+        return data
+      }
+      if (response?.status === 404) {
+        return null
+      }
+      throw new Error(toFailure(error).message)
+    },
+  })
+}
+
+export function useBookingWindow(eventTypeId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.bookingWindow(eventTypeId),
+    queryFn: async () =>
+      (await getBookingWindow({ path: { eventTypeId }, throwOnError: true })).data,
+    enabled,
   })
 }
 

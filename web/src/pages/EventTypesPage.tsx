@@ -13,7 +13,7 @@ export function EventTypesPage() {
     <Container size="md" py={48}>
       <Title order={1}>Выберите тип встречи</Title>
       <Text c="dimmed" mt="xs">
-        У каждого типа встречи своя длительность. Запись на выбранный тип скоро откроется.
+        Нажмите на карточку, чтобы открыть календарь и выбрать удобный слот.
       </Text>
 
       <div className={classes.content}>
@@ -29,14 +29,16 @@ export function EventTypesPage() {
           </Text>
         )}
         {eventTypes.data && eventTypes.data.length > 0 && (
-          <SimpleGrid
-            cols={{ base: 1, sm: 2 }}
-            spacing="md"
-            component="ul"
-            className={classes.list}
-          >
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
             {eventTypes.data.map((eventType) => (
-              <Card key={eventType.id} component="li" withBorder padding="lg">
+              <Card
+                key={eventType.id}
+                component={Link}
+                to={`/book/${eventType.id}`}
+                withBorder
+                padding="lg"
+                className={classes.card}
+              >
                 <Group justify="space-between" wrap="nowrap" align="flex-start">
                   <Text fw={600} size="lg">
                     {eventType.title}

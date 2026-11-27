@@ -1,0 +1,95 @@
+import { screen, within } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
+import { expect, test } from 'vitest'
+import type { BookingWindow } from '../api/generated/index.ts'
+import { fakeApi } from '../test/fake-api.ts'
+import { renderApp } from '../test/render.tsx'
+
+const intro = {
+  id: 'intro',
+  title: 'Знакомство',
+  description: 'Короткий звонок',
+  durationMinutes: 30,
+}
+
+/** Окно записи из 14 дней: сегодня всё уже прошло, дальше по два слота, один из них занят. */
+function bookingWindow(): BookingWindow {
+  const days = Array.from({ length: 14 }, (_, index) => {
+    const date = `2026-03-${String(index + 2).padStart(2, '0')}`
+    return {
+      date,
+      slots: [
+        {
+          startTime: `${date}T06:00:00.000Z`,
+          endTime: `${date}T06:30:00.000Z`,
+          available: index > 0,
+        },
+        { startTime: `${date}T06:30:00.000Z`, endTime: `${date}T07:00:00.000Z`, available: false },
+      ],
+    }
+  })
+  return { timeZone: 'Europe/Moscow', days }
+}
+
+function openBookingPage() {
+  fakeApi.eventTypes = [intro]
+  fakeApi.bookingWindows = { intro: bookingWindow() }
+  renderApp('/book/intro')
+}
+
+test('страница записи показывает календарь на 14 дней с числом свободных слотов', async () => {
+  openBookingPage()
+
+  expect(await screen.findByRole('heading', { level: 1, name: 'Знакомство' })).toBeVisible()
+  expect(screen.getByText(/московское время/)).toBeVisible()
+
+  const days = within(screen.getByRole('group', { name: 'Календарь' })).getAllByRole('button')
+  expect(days).toHaveLength(14)
+  expect(days[0]).toHaveAccessibleName('понедельник, 2 марта, свободно: 0 слотов')
+  expect(days[1]).toHaveAccessibleName('вторник, 3 марта, свободно: 1 слот')
+})
+
+test('по умолчанию выбран первый день со свободным слотом, время показано по Москве', async () => {
+  openBookingPage()
+
+  const days = within(await screen.findByRole('group', { name: 'Календарь' })).getAllByRole(
+    'button',
+  )
+  expect(days[0]).toHaveAttribute('aria-pressed', 'false')
+  expect(days[1]).toHaveAttribute('aria-pressed', 'true')
+
+  expect(screen.getByRole('button', { name: /09:00–09:30/ })).toHaveTextContent('Свободно')
+  expect(screen.getByRole('button', { name: /09:00–09:30/ })).toBeEnabled()
+})
+
+test('занятый слот помечен и недоступен для выбора', async () => {
+  openBookingPage()
+
+  const taken = await screen.findByRole('button', { name: /09:30–10:00/ })
+
+  expect(taken).toHaveTextContent('Занято')
+  expect(taken).toBeDisabled()
+})
+
+test('гость выбирает день и слот, выбор показан в карточке встречи', async () => {
+  const user = userEvent.setup()
+  openBookingPage()
+
+  const days = within(await screen.findByRole('group', { name: 'Календарь' })).getAllByRole(
+    'button',
+  )
+  await user.click(days[2]!)
+  await user.click(screen.getByRole('button', { name: /09:00–09:30/ }))
+
+  const summary = within(screen.getByRole('region', { name: 'Выбранная встреча' }))
+  expect(summary.getByText('среда, 4 марта')).toBeVisible()
+  expect(summary.getByText('09:00–09:30')).toBeVisible()
+})
+
+test('ссылка на несуществующий тип встречи показывает страницу «не найдено»', async () => {
+  renderApp('/book/unknown')
+
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Страница не найдена' }),
+  ).toBeVisible()
+})

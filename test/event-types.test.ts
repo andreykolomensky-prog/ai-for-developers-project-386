@@ -10,7 +10,7 @@ import { meeting30, startServer, type TestServer } from './support/server.ts'
 let server: TestServer
 
 beforeEach(async () => {
-  server = await startServer()
+  server = await startServer({ now: '2026-03-02T07:30:00.000Z' })
 })
 
 afterEach(async () => {

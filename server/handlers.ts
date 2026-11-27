@@ -1,6 +1,6 @@
+import { type BookingRules, buildBookingWindow } from './booking.ts'
 import type { RouteHandlers } from './generated/fastify.gen.ts'
 import type { NotFoundError } from './generated/types.gen.ts'
-import type { Store } from './store.ts'
 
 const eventTypeNotFound: NotFoundError = {
   code: 'not_found',
@@ -8,7 +8,9 @@ const eventTypeNotFound: NotFoundError = {
 }
 
 /** Обработчики операций контракта. Имена совпадают с `operationId` из OpenAPI. */
-export function createHandlers(store: Store): RouteHandlers {
+export function createHandlers(rules: BookingRules): RouteHandlers {
+  const { store } = rules
+
   return {
     getHealth: async (_request, reply) => reply.code(200).send({ status: 'ok' }),
 
@@ -37,6 +39,14 @@ export function createHandlers(store: Store): RouteHandlers {
         return reply.code(404).send(eventTypeNotFound)
       }
       return reply.code(200).send(eventType)
+    },
+
+    getBookingWindow: async (request, reply) => {
+      const eventType = store.getEventType(request.params.eventTypeId)
+      if (!eventType) {
+        return reply.code(404).send(eventTypeNotFound)
+      }
+      return reply.code(200).send(buildBookingWindow(eventType, rules))
     },
   }
 }

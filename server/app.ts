@@ -5,6 +5,7 @@ import Fastify, { type FastifyInstance } from 'fastify'
 import openapiGlue from 'fastify-openapi-glue'
 import type { ValidationError } from './generated/types.gen.ts'
 import { createHandlers } from './handlers.ts'
+import { defaultSchedule, type Schedule } from './schedule.ts'
 import { Store } from './store.ts'
 
 const defaultStaticDir = path.resolve(import.meta.dirname, '../dist/web')
@@ -16,6 +17,9 @@ export type AppOptions = {
   staticDir?: string
   /** Хранилище. По умолчанию пустое. */
   store?: Store
+  schedule?: Schedule
+  /** Текущее время в миллисекундах эпохи. Подменяется в тестах. */
+  now?: () => number
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -47,7 +51,11 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
   // Маршруты, проверка запросов и схемы ответов берутся из OpenAPI-спецификации.
   app.register(openapiGlue, {
     specification,
-    serviceHandlers: createHandlers(options.store ?? new Store()),
+    serviceHandlers: createHandlers({
+      store: options.store ?? new Store(),
+      schedule: options.schedule ?? defaultSchedule,
+      now: options.now ?? Date.now,
+    }),
   })
 
   const staticDir = options.staticDir ?? defaultStaticDir

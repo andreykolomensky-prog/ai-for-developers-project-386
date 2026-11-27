@@ -10,14 +10,17 @@ test('страница записи показывает типы встреч �
   ]
   renderApp('/book')
 
-  const cards = await screen.findAllByRole('listitem')
+  const main = within(screen.getByRole('main'))
+  const cards = await main.findAllByRole('link')
 
   expect(cards).toHaveLength(2)
   expect(within(cards[0]!).getByText('Знакомство')).toBeVisible()
   expect(within(cards[0]!).getByText('Короткий звонок')).toBeVisible()
   expect(within(cards[0]!).getByText('15 мин')).toBeVisible()
+  expect(cards[0]).toHaveAttribute('href', '/book/intro')
   expect(within(cards[1]!).getByText('Разбор задачи')).toBeVisible()
   expect(within(cards[1]!).getByText('45 мин')).toBeVisible()
+  expect(cards[1]).toHaveAttribute('href', '/book/review')
 })
 
 test('страница записи без типов встреч подсказывает, где их создать', async () => {

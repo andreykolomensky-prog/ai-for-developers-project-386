@@ -5,6 +5,34 @@ export type ClientOptions = {
 };
 
 /**
+ * Окно записи: ближайшие 14 календарных дней, начиная с сегодняшнего.
+ */
+export type BookingWindow = {
+    /**
+     * Часовой пояс владельца (IANA), в котором заданы даты и рабочие часы.
+     */
+    timeZone: string;
+    /**
+     * Ровно 14 дней подряд, первый из них сегодняшний.
+     */
+    days: Array<BookingWindowDay>;
+};
+
+/**
+ * Слоты одного календарного дня.
+ */
+export type BookingWindowDay = {
+    /**
+     * Дата в часовом поясе владельца.
+     */
+    date: string;
+    /**
+     * Слоты дня по возрастанию времени начала.
+     */
+    slots: Array<Slot>;
+};
+
+/**
  * Тип встречи: шаблон, который заводит владелец.
  */
 export type EventType = {
@@ -44,6 +72,24 @@ export type Health = {
 export type NotFoundError = {
     code: 'not_found';
     message: string;
+};
+
+/**
+ * Слот: интервал, на который гость может записаться.
+ */
+export type Slot = {
+    /**
+     * Начало слота.
+     */
+    startTime: string;
+    /**
+     * Конец слота: начало плюс длительность типа встречи.
+     */
+    endTime: string;
+    /**
+     * Свободен ли слот. Слот, который уже начался, недоступен.
+     */
+    available: boolean;
 };
 
 /**
@@ -137,6 +183,33 @@ export type GetEventTypeResponses = {
 };
 
 export type GetEventTypeResponse = GetEventTypeResponses[keyof GetEventTypeResponses];
+
+export type GetBookingWindowData = {
+    body?: never;
+    path: {
+        eventTypeId: string;
+    };
+    query?: never;
+    url: '/api/event-types/{eventTypeId}/booking-window';
+};
+
+export type GetBookingWindowErrors = {
+    /**
+     * Запрошенный ресурс не найден.
+     */
+    404: NotFoundError;
+};
+
+export type GetBookingWindowError = GetBookingWindowErrors[keyof GetBookingWindowErrors];
+
+export type GetBookingWindowResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: BookingWindow;
+};
+
+export type GetBookingWindowResponse = GetBookingWindowResponses[keyof GetBookingWindowResponses];
 
 export type GetHealthData = {
     body?: never;
