@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateEventTypeData, CreateEventTypeErrors, CreateEventTypeResponses, GetEventTypeData, GetEventTypeErrors, GetEventTypeResponses, GetHealthData, GetHealthResponses, ListEventTypesData, ListEventTypesResponses } from './types.gen';
+import type { CreateEventTypeData, CreateEventTypeErrors, CreateEventTypeResponses, GetBookingWindowData, GetBookingWindowErrors, GetBookingWindowResponses, GetEventTypeData, GetEventTypeErrors, GetEventTypeResponses, GetHealthData, GetHealthResponses, ListEventTypesData, ListEventTypesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -39,6 +39,11 @@ export const createEventType = <ThrowOnError extends boolean = false>(options: O
  * Один тип встречи.
  */
 export const getEventType = <ThrowOnError extends boolean = false>(options: Options<GetEventTypeData, ThrowOnError>): RequestResult<GetEventTypeResponses, GetEventTypeErrors, ThrowOnError> => (options.client ?? client).get<GetEventTypeResponses, GetEventTypeErrors, ThrowOnError>({ url: '/api/event-types/{eventTypeId}', ...options });
+
+/**
+ * Окно записи для типа встречи: слоты на ближайшие 14 дней с отметкой занятости.
+ */
+export const getBookingWindow = <ThrowOnError extends boolean = false>(options: Options<GetBookingWindowData, ThrowOnError>): RequestResult<GetBookingWindowResponses, GetBookingWindowErrors, ThrowOnError> => (options.client ?? client).get<GetBookingWindowResponses, GetBookingWindowErrors, ThrowOnError>({ url: '/api/event-types/{eventTypeId}/booking-window', ...options });
 
 /**
  * Проверка, что приложение запущено.

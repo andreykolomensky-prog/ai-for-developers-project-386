@@ -81,6 +81,31 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
       tags:
         - Типы встреч
+  /api/event-types/{eventTypeId}/booking-window:
+    get:
+      operationId: getBookingWindow
+      description: 'Окно записи для типа встречи: слоты на ближайшие 14 дней с отметкой занятости.'
+      parameters:
+        - name: eventTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingWindow'
+        '404':
+          description: Запрошенный ресурс не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Типы встреч
   /api/health:
     get:
       operationId: getHealth
@@ -97,6 +122,37 @@ paths:
         - Служебное
 components:
   schemas:
+    BookingWindow:
+      type: object
+      required:
+        - timeZone
+        - days
+      properties:
+        timeZone:
+          type: string
+          description: Часовой пояс владельца (IANA), в котором заданы даты и рабочие часы.
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingWindowDay'
+          description: Ровно 14 дней подряд, первый из них сегодняшний.
+      description: 'Окно записи: ближайшие 14 календарных дней, начиная с сегодняшнего.'
+    BookingWindowDay:
+      type: object
+      required:
+        - date
+        - slots
+      properties:
+        date:
+          type: string
+          format: date
+          description: Дата в часовом поясе владельца.
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+          description: Слоты дня по возрастанию времени начала.
+      description: Слоты одного календарного дня.
     EventType:
       type: object
       required:
@@ -162,6 +218,25 @@ components:
         message:
           type: string
       description: Запрошенный ресурс не найден.
+    Slot:
+      type: object
+      required:
+        - startTime
+        - endTime
+        - available
+      properties:
+        startTime:
+          type: string
+          format: date-time
+          description: Начало слота.
+        endTime:
+          type: string
+          format: date-time
+          description: 'Конец слота: начало плюс длительность типа встречи.'
+        available:
+          type: boolean
+          description: Свободен ли слот. Слот, который уже начался, недоступен.
+      description: 'Слот: интервал, на который гость может записаться.'
     ValidationError:
       type: object
       required:
