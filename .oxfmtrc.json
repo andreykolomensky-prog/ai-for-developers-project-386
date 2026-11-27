@@ -8,6 +8,8 @@
     "CHANGELOG.md",
     "api/generated",
     "web/src/api/generated",
-    "server/generated"
+    "server/generated",
+    ".claude/skills",
+    "skills-lock.json"
   ]
 }

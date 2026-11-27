@@ -6,7 +6,10 @@ exclude = List(
   ".github/workflows/hexlet-check.yml",
   "api/generated",
   "web/src/api/generated",
-  "server/generated"
+  "server/generated",
+  // Скиллы ставит установщик, их содержимое не правится и не проверяется.
+  ".claude/skills",
+  "skills-lock.json"
 )
 
 // Из этих шагов hk собирает хуки check, fix и pre-commit.

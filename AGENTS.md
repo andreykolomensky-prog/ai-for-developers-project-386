@@ -38,7 +38,7 @@
 
 ## Agent skills
 
-Проект ведётся набором скиллов [mattpocock/skills](https://github.com/mattpocock/skills): `/grill-with-docs`, `/wayfinder`, `/to-spec`, `/to-tickets`, `/implement`, `/implement-spec`. Установка: `npx skills@latest add mattpocock/skills`.
+Проект ведётся набором скиллов [mattpocock/skills](https://github.com/mattpocock/skills): `/grill-with-docs`, `/wayfinder`, `/to-spec`, `/to-tickets`, `/implement`, `/implement-spec`. Скиллы установлены в `.claude/skills/`, версии зафиксированы в `skills-lock.json`. Их файлы руками не правятся, обновление: `npx skills@latest add mattpocock/skills`.
 
 ### Issue tracker
 

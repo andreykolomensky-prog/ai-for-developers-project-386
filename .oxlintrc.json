@@ -10,7 +10,9 @@
     "react/react-in-jsx-scope": "off",
     "import/no-unassigned-import": [
       "error",
-      { "allow": ["**/*.css", "@testing-library/jest-dom/vitest"] }
+      {
+        "allow": ["**/*.css", "@testing-library/jest-dom/vitest"]
+      }
     ]
   },
   "overrides": [
@@ -27,5 +29,5 @@
       }
     }
   ],
-  "ignorePatterns": ["dist", "web/src/api/generated", "server/generated"]
+  "ignorePatterns": ["dist", "web/src/api/generated", "server/generated", ".claude/skills"]
 }
