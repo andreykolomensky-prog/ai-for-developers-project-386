@@ -11,6 +11,8 @@ type FakeApi = {
   bookingWindows: Record<string, BookingWindow>
   /** Запросы на запись, которые отправил интерфейс. */
   bookingRequests: CreateBookingRequest[]
+  /** Начала слотов, которые успел занять другой гость: запись на них получает 409. */
+  takenStarts: string[]
 }
 
 /**
@@ -21,17 +23,19 @@ export const fakeApi: FakeApi = {
   eventTypes: [],
   bookingWindows: {},
   bookingRequests: [],
+  takenStarts: [],
 }
 
 export function resetFakeApi() {
   fakeApi.eventTypes = []
   fakeApi.bookingWindows = {}
   fakeApi.bookingRequests = []
+  fakeApi.takenStarts = []
 }
 
 const notFound = () => Response.json({ code: 'not_found', message: 'Не найдено' }, { status: 404 })
 
-/** Принимает запись и отвечает так, как ответил бы сервер на свободный слот. */
+/** Принимает запись и отвечает так, как ответил бы сервер: 201 или 409 для занятого времени. */
 async function createBooking(request: Request): Promise<Response> {
   const body = (await request.json()) as CreateBookingRequest
   const eventType = fakeApi.eventTypes.find((candidate) => candidate.id === body.eventTypeId)
@@ -39,6 +43,18 @@ async function createBooking(request: Request): Promise<Response> {
     return notFound()
   }
   fakeApi.bookingRequests.push(body)
+  if (fakeApi.takenStarts.includes(body.startTime)) {
+    // Как и настоящий сервер, после отказа отдаём слот занятым.
+    for (const day of fakeApi.bookingWindows[eventType.id]?.days ?? []) {
+      for (const slot of day.slots) {
+        slot.available &&= slot.startTime !== body.startTime
+      }
+    }
+    return Response.json(
+      { code: 'slot_taken', message: 'Это время уже занято. Выберите другой слот' },
+      { status: 409 },
+    )
+  }
   const { eventTypeId: _eventTypeId, ...details } = body
   const booking: Booking = {
     ...details,

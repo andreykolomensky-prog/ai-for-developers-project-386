@@ -12,7 +12,7 @@ const intro = {
   durationMinutes: 30,
 }
 
-/** Окно записи из 14 дней: сегодня всё уже прошло, дальше по два слота, один из них занят. */
+/** Окно записи из 14 дней: сегодня всё уже прошло, дальше по три слота, второй из них занят. */
 function bookingWindow(): BookingWindow {
   const days = Array.from({ length: 14 }, (_, index) => {
     const date = `2026-03-${String(index + 2).padStart(2, '0')}`
@@ -25,6 +25,11 @@ function bookingWindow(): BookingWindow {
           available: index > 0,
         },
         { startTime: `${date}T06:30:00.000Z`, endTime: `${date}T07:00:00.000Z`, available: false },
+        {
+          startTime: `${date}T07:00:00.000Z`,
+          endTime: `${date}T07:30:00.000Z`,
+          available: index > 0,
+        },
       ],
     }
   })
@@ -46,7 +51,7 @@ test('страница записи показывает календарь на
   const days = within(screen.getByRole('group', { name: 'Календарь' })).getAllByRole('button')
   expect(days).toHaveLength(14)
   expect(days[0]).toHaveAccessibleName('понедельник, 2 марта, свободно: 0 слотов')
-  expect(days[1]).toHaveAccessibleName('вторник, 3 марта, свободно: 1 слот')
+  expect(days[1]).toHaveAccessibleName('вторник, 3 марта, свободно: 2 слота')
 })
 
 test('по умолчанию выбран первый день со свободным слотом, время показано по Москве', async () => {
@@ -108,6 +113,32 @@ test('гость записывается: форма отправляет вы�
       notes: 'Обсудим запуск',
     },
   ])
+})
+
+test('если время заняли, гость видит сообщение и выбирает другой слот, не вводя данные заново', async () => {
+  const user = userEvent.setup()
+  openBookingPage()
+  fakeApi.takenStarts = ['2026-03-03T06:00:00.000Z']
+
+  await user.click(await screen.findByRole('button', { name: /09:00–09:30/ }))
+  await user.click(screen.getByRole('button', { name: 'Продолжить' }))
+  await user.type(screen.getByLabelText(/Имя/), 'Борис Опоздавший')
+  await user.type(screen.getByLabelText(/Email/), 'boris@example.com')
+  await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Это время уже занято')
+  expect(screen.queryByRole('heading', { name: 'Вы записаны' })).not.toBeInTheDocument()
+  // Гость снова на выборе слота, занятое время больше недоступно.
+  expect(await screen.findByRole('button', { name: /09:00–09:30/ })).toBeDisabled()
+
+  await user.click(screen.getByRole('button', { name: /10:00–10:30/ }))
+  await user.click(screen.getByRole('button', { name: 'Продолжить' }))
+  expect(screen.getByLabelText(/Имя/)).toHaveValue('Борис Опоздавший')
+  expect(screen.getByLabelText(/Email/)).toHaveValue('boris@example.com')
+  await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+  expect(await screen.findByRole('heading', { level: 1, name: 'Вы записаны' })).toBeVisible()
 })
 
 test('без слота продолжить нельзя, а форма не отправляется без имени и с некорректным email', async () => {

@@ -29,7 +29,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
         '409':
-          description: Выбранное время уже занято другой записью.
+          description: Выбранное время пересекается с существующей записью.
           content:
             application/json:
               schema:
@@ -334,7 +334,7 @@ components:
           description: 'Конец слота: начало плюс длительность типа встречи.'
         available:
           type: boolean
-          description: 'Свободен ли слот: он ещё не начался и на него нет записи.'
+          description: 'Свободен ли слот: он ещё не начался и не пересекается ни с одной записью.'
       description: 'Слот: интервал, на который гость может записаться.'
     SlotTakenError:
       type: object
@@ -348,7 +348,7 @@ components:
             - slot_taken
         message:
           type: string
-      description: Выбранное время уже занято другой записью.
+      description: Выбранное время пересекается с существующей записью.
     ValidationError:
       type: object
       required:

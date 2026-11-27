@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { BookingWindow, CreateBookingRequest, EventType } from './generated/types.gen.ts'
-import { daySlots, type Interval, type Schedule, windowDates } from './schedule.ts'
+import { daySlots, overlaps, type Schedule, windowDates } from './schedule.ts'
 import type { Store, StoredBooking } from './store.ts'
 
 export type BookingRules = {
@@ -11,9 +11,6 @@ export type BookingRules = {
 }
 
 const toIso = (instant: number) => new Date(instant).toISOString()
-
-/** Занимают ли два интервала один и тот же слот. */
-const isSameSlot = (a: Interval, b: Interval) => a.start === b.start && a.end === b.end
 
 /** Окно записи для типа встречи: слоты всех дней окна с отметкой занятости. */
 export function buildBookingWindow(eventType: EventType, rules: BookingRules): BookingWindow {
@@ -28,7 +25,7 @@ export function buildBookingWindow(eventType: EventType, rules: BookingRules): B
       slots: daySlots(date, eventType.durationMinutes, schedule).map((slot) => ({
         startTime: toIso(slot.start),
         endTime: toIso(slot.end),
-        available: slot.start > now && !bookings.some((booking) => isSameSlot(slot, booking)),
+        available: slot.start > now && !bookings.some((booking) => overlaps(slot, booking)),
       })),
     })),
   }
@@ -40,7 +37,9 @@ export type CreateBookingResult =
 
 /**
  * Создаёт запись, если выбранное время является слотом окна записи, слот ещё
- * не начался и на него нет другой записи.
+ * не начался и не пересекается ни с одной записью любого типа встречи.
+ * Проверка и добавление выполняются синхронно, поэтому из двух одновременных
+ * запросов на одно время успешным будет только один.
  */
 export function createBooking(
   request: CreateBookingRequest,
@@ -64,7 +63,7 @@ export function createBooking(
   if (slot.start <= now) {
     return { ok: false, reason: 'slot_started' }
   }
-  if (store.listBookings().some((booking) => isSameSlot(slot, booking))) {
+  if (store.listBookings().some((booking) => overlaps(slot, booking))) {
     return { ok: false, reason: 'slot_taken' }
   }
 

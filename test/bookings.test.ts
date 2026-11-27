@@ -82,6 +82,19 @@ describe('создание записи', () => {
     expect(await slotAvailability('meeting-30', startTime)).toBe(false)
   })
 
+  test('запись занимает время и в окне записи других типов встреч', async () => {
+    await book('meeting-60', msk('2026-03-03', '10:00'))
+
+    expect(await slotAvailability('meeting-30', msk('2026-03-03', '10:00'))).toBe(false)
+    expect(await slotAvailability('meeting-30', msk('2026-03-03', '10:30'))).toBe(false)
+    expect(await slotAvailability('meeting-15', msk('2026-03-03', '10:45'))).toBe(false)
+    // Соседние слоты остаются свободными.
+    expect(await slotAvailability('meeting-30', msk('2026-03-03', '09:30'))).toBe(true)
+    expect(await slotAvailability('meeting-30', msk('2026-03-03', '11:00'))).toBe(true)
+  })
+})
+
+describe('конфликт занятого времени', () => {
   test('повторная запись на тот же слот отклоняется с кодом 409', async () => {
     const startTime = msk('2026-03-03', '10:00')
     await book('meeting-30', startTime)
@@ -96,6 +109,79 @@ describe('создание записи', () => {
     expect(response.status).toBe(409)
     expect(response.body.code).toBe('slot_taken')
     expect(response.body.message).toMatch(/занято/i)
+  })
+
+  test('то же время нельзя занять другим типом встречи', async () => {
+    await book('meeting-30', msk('2026-03-03', '10:00'))
+
+    const response = await book('meeting-15', msk('2026-03-03', '10:00'))
+
+    expect(response.status).toBe(409)
+  })
+
+  test('частичное наложение: после встречи на 60 минут в 10:00 запись на 30 минут в 10:30 отклоняется', async () => {
+    const hour = await book('meeting-60', msk('2026-03-03', '10:00'))
+    expect(hour.status).toBe(201)
+
+    const overlapping = await server.api<SlotTakenError>('POST', '/api/bookings', {
+      eventTypeId: 'meeting-30',
+      startTime: msk('2026-03-03', '10:30'),
+      ...guest,
+    })
+
+    expect(overlapping.status).toBe(409)
+    expect(overlapping.body.code).toBe('slot_taken')
+  })
+
+  test('частичное наложение в обратном порядке: длинная встреча не ложится поверх короткой', async () => {
+    await book('meeting-30', msk('2026-03-03', '10:30'))
+
+    const response = await book('meeting-60', msk('2026-03-03', '10:00'))
+
+    expect(response.status).toBe(409)
+  })
+
+  test('короткая встреча внутри длинной тоже отклоняется', async () => {
+    await book('meeting-60', msk('2026-03-03', '10:00'))
+
+    const response = await book('meeting-15', msk('2026-03-03', '10:15'))
+
+    expect(response.status).toBe(409)
+  })
+
+  test('следующая встреча может начинаться в момент окончания предыдущей', async () => {
+    await book('meeting-60', msk('2026-03-03', '10:00'))
+
+    const after = await book('meeting-30', msk('2026-03-03', '11:00'))
+    const before = await book('meeting-30', msk('2026-03-03', '09:30'))
+
+    expect(after.status).toBe(201)
+    expect(before.status).toBe(201)
+  })
+
+  test('из одновременных запросов на один слот проходит только один', async () => {
+    const startTime = msk('2026-03-03', '10:00')
+
+    const responses = await Promise.all(
+      Array.from({ length: 20 }, (_, index) =>
+        book('meeting-30', startTime, { guestName: `Гость ${index + 1}` }),
+      ),
+    )
+
+    const statuses = responses.map((response) => response.status)
+    expect(statuses.filter((status) => status === 201)).toHaveLength(1)
+    expect(statuses.filter((status) => status === 409)).toHaveLength(19)
+  })
+
+  test('из одновременных запросов разных типов на пересекающееся время проходит только один', async () => {
+    const responses = await Promise.all([
+      book('meeting-60', msk('2026-03-03', '10:00')),
+      book('meeting-30', msk('2026-03-03', '10:30')),
+      book('meeting-15', msk('2026-03-03', '10:45')),
+    ])
+
+    expect(responses.filter((response) => response.status === 201)).toHaveLength(1)
+    expect(responses.filter((response) => response.status === 409)).toHaveLength(2)
   })
 })
 
