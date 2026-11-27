@@ -76,6 +76,16 @@ description = "API-тесты и тесты интерфейса на Vitest"
 depends = ["generate"]
 run = "vitest run"
 
+[tasks."e2e:browser"]
+description = "Установить браузер для Playwright"
+depends = ["install"]
+run = "playwright install --with-deps chromium"
+
+[tasks.e2e]
+description = "Браузерный сценарий бронирования с настоящим сервером"
+depends = ["build", "e2e:browser"]
+run = "playwright test"
+
 [tasks.check]
-description = "Все проверки: линтер, типы, генерация, тесты. Эту же команду запускает CI"
-depends = ["lint", "typecheck", "test", "generate:check"]
+description = "Все проверки: линтер, типы, генерация, тесты, браузерный сценарий. Эту же команду запускает CI"
+depends = ["lint", "typecheck", "test", "generate:check", "e2e"]

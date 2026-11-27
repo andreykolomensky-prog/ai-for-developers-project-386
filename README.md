@@ -60,7 +60,7 @@
 - Контракт: [TypeSpec](https://typespec.io/) → OpenAPI 3.1 → клиентский SDK и серверные типы через [openapi-ts](https://heyapi.dev/)
 - Бекенд: [Fastify](https://fastify.dev/), маршруты и проверка запросов строятся из OpenAPI ([fastify-openapi-glue](https://github.com/seriousme/fastify-openapi-glue))
 - Фронтенд: [React](https://react.dev/), [Vite](https://vite.dev/), [Mantine](https://mantine.dev/)
-- Тесты: [Vitest](https://vitest.dev/)
+- Тесты: [Vitest](https://vitest.dev/) для API и компонентов, [Playwright](https://playwright.dev/) для браузерного сценария
 - Линтер и форматирование: [Oxlint и oxfmt](https://oxc.rs/), проверка типов `tsc`
 - Окружение и задачи: [mise](https://mise.jdx.dev/), git-хуки через [hk](https://hk.jdx.dev/)
 
