@@ -1,0 +1,36 @@
+{
+  "name": "call-calendar",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Сервис записи на звонок: владелец публикует время, гость бронирует свободный слот",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "start": "node server/main.ts"
+  },
+  "dependencies": {
+    "@fastify/static": "^11.0.0",
+    "@mantine/core": "^9.8.2",
+    "@mantine/hooks": "^9.8.2",
+    "fastify": "^5.12.8",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.11",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "oxfmt": "^0.80.0",
+    "oxlint": "^1.95.0",
+    "postcss": "^8.5.34",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.4.0",
+    "vitest": "^5.1.2"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

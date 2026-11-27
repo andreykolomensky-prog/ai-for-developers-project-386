@@ -1,0 +1,64 @@
+[tools]
+hk = "2.12.0"
+node = "26.13.1"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+[hooks]
+# После установки инструментов подключаем git-хуки из hk.pkl.
+postinstall = "hk install --mise"
+
+[tasks.install]
+description = "Установить зависимости по package-lock.json"
+run = "npm ci"
+sources = ["package.json", "package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+
+[tasks."dev:server"]
+description = "Бекенд с перезапуском при изменениях, http://localhost:3000"
+depends = ["install"]
+run = "node --watch server/main.ts"
+
+[tasks."dev:web"]
+description = "Фронтенд (Vite) с прокси на бекенд, http://localhost:5173"
+depends = ["install"]
+run = "vite"
+
+[tasks.dev]
+description = "Бекенд и фронтенд в режиме разработки"
+depends = ["dev:server", "dev:web"]
+
+[tasks.build]
+description = "Собрать фронтенд в dist/web"
+depends = ["install"]
+run = "vite build"
+
+[tasks.start]
+description = "Запустить приложение как в продакшене: сервер отдаёт API и собранный фронтенд"
+depends = ["build"]
+run = "node server/main.ts"
+
+[tasks.lint]
+description = "Линтер и проверка форматирования"
+depends = ["install"]
+run = ["oxlint", "oxfmt --check"]
+
+[tasks.format]
+description = "Исправить форматирование и автоисправимые замечания линтера"
+depends = ["install"]
+run = ["oxfmt", "oxlint --fix"]
+
+[tasks.typecheck]
+description = "Проверка типов"
+depends = ["install"]
+run = "tsc -b"
+
+[tasks.test]
+description = "Тесты"
+depends = ["install"]
+run = "vitest run"
+
+[tasks.check]
+description = "Все проверки: линтер, типы, тесты. Эту же команду запускает CI"
+depends = ["lint", "typecheck", "test"]
