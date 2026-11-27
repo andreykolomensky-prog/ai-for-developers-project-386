@@ -1,7 +1,7 @@
 # Календарь звонков
 
-
 [![hexlet-check](https://github.com/andreykolomensky-prog/ai-for-developers-project-386/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/andreykolomensky-prog/ai-for-developers-project-386/actions)
+[![ci](https://github.com/andreykolomensky-prog/ai-for-developers-project-386/actions/workflows/ci.yml/badge.svg)](https://github.com/andreykolomensky-prog/ai-for-developers-project-386/actions/workflows/ci.yml)
 
 Разработайте совместно с ИИ сервис для бронирования календаря
 
@@ -56,20 +56,34 @@
 
 ## Стек
 
-- Разное
+- TypeScript, Node.js 26
+- Бекенд: [Fastify](https://fastify.dev/)
+- Фронтенд: [React](https://react.dev/), [Vite](https://vite.dev/), [Mantine](https://mantine.dev/)
+- Тесты: [Vitest](https://vitest.dev/)
+- Линтер и форматирование: [Oxlint и oxfmt](https://oxc.rs/), проверка типов `tsc`
+- Окружение и задачи: [mise](https://mise.jdx.dev/), git-хуки через [hk](https://hk.jdx.dev/)
 
 ## Установка
 
-<!-- Опишите установку: клонирование, зависимости, переменные окружения -->
+Нужен только [mise](https://mise.jdx.dev/getting-started.html): версии Node.js и остальных инструментов записаны в `mise.toml`.
 
 ```bash
 git clone https://github.com/andreykolomensky-prog/ai-for-developers-project-386.git
 cd ai-for-developers-project-386
+mise trust
+mise install      # ставит инструменты и подключает git-хуки
+mise run install  # ставит зависимости из package-lock.json
 ```
 
 ## Использование
 
-<!-- Добавьте примеры запуска и запись asciinema — именно это смотрит работодатель -->
+```bash
+mise run dev    # бекенд на http://localhost:3000, фронтенд на http://localhost:5173
+mise run check  # линтер, проверка типов и тесты; эту же команду запускает CI
+mise run start  # сборка фронтенда и запуск как в продакшене на PORT (по умолчанию 3000)
+```
+
+Остальные задачи показывает `mise tasks`. Рабочие правила проекта для ИИ-агентов описаны в [AGENTS.md](AGENTS.md).
 
 ---
 
